@@ -6,7 +6,6 @@ import { ChoiceChips } from "../ui";
 
 type Strategy = "blast" | "limiter" | "priority";
 const LIMIT = 40; // requests the provider accepts per second (scaled down)
-const SECONDS = 20;
 /** Live chat traffic per second, plus a background job that wants to send 400 requests. */
 const LIVE = [12, 14, 15, 13, 16, 18, 20, 22, 21, 19, 18, 17, 16, 15, 14, 14, 13, 12, 12, 11];
 const JOB_TOTAL = 400;
