@@ -19,6 +19,7 @@ const areaRegistries: Record<string, () => Promise<{ loaders: DemoLoaders }>> = 
   deployment: () => import("./deployment/registry"),
   backend: () => import("./backend/registry"),
   "system-design": () => import("./system-design/registry"),
+  security: () => import("./security/registry"),
 };
 
 const cache = new Map<string, React.LazyExoticComponent<ComponentType>>();
