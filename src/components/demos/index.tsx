@@ -20,6 +20,16 @@ export const demos: Record<string, ComponentType> = {
   FewShotDemo: dynamic(() => import("./llm/FewShotDemo"), { loading: () => <DemoFallback />, ssr: false }),
   ChainOfThoughtDemo: dynamic(() => import("./llm/ChainOfThoughtDemo"), { loading: () => <DemoFallback />, ssr: false }),
   ReasoningModelDemo: dynamic(() => import("./llm/ReasoningModelDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  StructuredOutputDemo: dynamic(() => import("./llm/StructuredOutputDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  PromptCachingDemo: dynamic(() => import("./llm/PromptCachingDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  TokenPricingDemo: dynamic(() => import("./llm/TokenPricingDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  HallucinationDemo: dynamic(() => import("./llm/HallucinationDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  MultimodalDemo: dynamic(() => import("./llm/MultimodalDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  LoRADemo: dynamic(() => import("./llm/LoRADemo"), { loading: () => <DemoFallback />, ssr: false }),
+  QLoRADemo: dynamic(() => import("./llm/QLoRADemo"), { loading: () => <DemoFallback />, ssr: false }),
+  QuantizationDemo: dynamic(() => import("./llm/QuantizationDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  DistillationDemo: dynamic(() => import("./llm/DistillationDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  OpenVsClosedDemo: dynamic(() => import("./llm/OpenVsClosedDemo"), { loading: () => <DemoFallback />, ssr: false }),
 };
 
 export const DEMO_KEYS = Object.keys(demos);

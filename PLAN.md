@@ -14,7 +14,7 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
 - [x] **Step 5 — Home (160-dot grid, area tiles, rules, portfolio teaser) and Start (prereqs, phase timeline, hours slider).**
 - [x] **Step 6 — Area pages, concept cards with three layers, 160 concept pages, demo registry.**
 - [ ] **Step 7 — Write the content, one area at a time** (`kid`, `realWorld`, `engineering`, `related`, `keywords`), in phase order. Run `npm run check:kid` after each file. Commit per area: `content: <area> concepts 01-20`.
-  - [ ] 7a LLM (01–10 done; 11–20 open)
+  - [x] 7a LLM (all 20)
   - [ ] 7b RAG
   - [ ] 7c AI Agents
   - [ ] 7d Evals
@@ -25,7 +25,7 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
   - [ ] When 7a is complete, make `kid`, `realWorld`, `engineering` required in `schema.ts` for the LLM area (and per area as each finishes), so placeholders cannot ship.
 - [ ] **Step 8 — Interactive demos, one area at a time.** Every base concept (01–10) gets a `demo`; every production concept gets a `demo` or an `illustration`. Follow the demo contract (`DemoFrame`, 320 px, Reset, keyboard, reduced-motion step mode). Register in `src/components/demos/index.tsx`.
   - [x] 8a LLM base concepts 01–10: Tokenizer, TransformerStack (illustration), Attention, ContextWindow, KvCache, Temperature, SystemPrompt, FewShot, ChainOfThought, ReasoningModel
-  - [ ] 8a LLM production concepts 11–20
+  - [x] 8a LLM production concepts 11–20: StructuredOutput, PromptCaching, TokenPricing, Hallucination, Multimodal, LoRA, QLoRA, Quantization, Distillation, OpenVsClosed
   - [ ] 8b–8h other areas
 - [x] **Step 9 — Projects, portfolio, project modal** with live GitHub stats (ISR 1 h), `?project=` deep links, `/projects/[id]` pages with README.
   - [ ] Create the project repositories named in `projects.ts` (or rename them there) and add screenshots to `public/projects/`.

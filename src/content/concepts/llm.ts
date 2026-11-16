@@ -340,9 +340,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Force the reply into JSON that matches your schema, so your code can parse it every time.",
-    related: ["security-06", "backend-19"],
+    kid: "Imagine a form with boxes for name, age and colour. Instead of writing a messy letter, the computer must fill in every box, so another computer can read it without guessing.",
+    realWorld: {
+      title: "The parrot fills in a form",
+      text: "The library's catalogue machine cannot read chatty answers like 'Oh, that one is by Austen, lovely book!'. So the librarian gives the parrot a form with three boxes: title, author, year. The parrot may only answer by filling in the boxes, and a form with an empty or wrong box is handed back. Now the catalogue machine can read every answer.",
+    },
+    engineering: {
+      text: "Structured outputs constrain generation to a JSON Schema, either through the provider's native JSON-schema mode or by forcing a tool call whose input schema is your target type. Constrained decoding means the reply always parses and has the required fields and types, which removes fragile regex parsing. Define the schema once with Pydantic or Zod, still validate the result, and keep schemas small: very large or deeply nested schemas are slower and more error-prone.",
+      code: {
+        lang: "python",
+        source:
+          "from anthropic import Anthropic\nfrom pydantic import BaseModel\n\nclass Book(BaseModel):\n    title: str\n    author: str\n    year: int\n\nclient = Anthropic()\nreply = client.messages.create(\n    model=\"claude-sonnet-5-5\",                          # use your current model\n    max_tokens=200,\n    tools=[{\"name\": \"save_book\", \"description\": \"Save one book\",\n            \"input_schema\": Book.model_json_schema()}],\n    tool_choice={\"type\": \"tool\", \"name\": \"save_book\"},  # the reply MUST use this schema\n    messages=[{\"role\": \"user\", \"content\": \"Emma, written by Jane Austen in 1815\"}],\n)\nbook = Book.model_validate(reply.content[0].input)     # a typed object, not a string\nprint(book.year + 1)                                    # 1816",
+      },
+      pitfalls: [
+        "Valid JSON is not correct JSON: the values can still be wrong, so validate meaning too.",
+        "A schema that forces an answer leaves no room for 'unknown'; add nullable fields or a 'not found' option.",
+        "Very large or deeply nested schemas slow generation and raise error rates.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/build-with-claude/tool-use",
+    },
+    demo: "StructuredOutputDemo",
+    related: ["llm-08", "security-06", "backend-19", "agents-01"],
     projects: ["build-llm"],
-    keywords: ["structured", "outputs"],
+    keywords: ["structured outputs", "json", "schema", "pydantic", "parse", "tool use", "format"],
   },
   {
     id: "llm-12",
@@ -353,9 +373,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Reuse an unchanged prompt prefix across calls to cut cost and latency.",
-    related: ["llm-05", "system-design-04"],
+    kid: "If you read the same long story every morning, you would keep a bookmark instead of starting again. The computer keeps the start of a long question ready, so repeat questions are faster and cheaper.",
+    realWorld: {
+      title: "The rulebook stays open on the desk",
+      text: "Every visitor to the law section asks about the same 300-page rulebook. Without caching, the parrot reads the whole rulebook again for each visitor. With caching, the librarian leaves the rulebook open on the desk for a few minutes: the next visitor only adds their own question, so the answer comes faster and the library pays much less for the reading.",
+    },
+    engineering: {
+      text: "Prompt caching stores the processed state of a prompt prefix (system prompt, tool definitions, long documents, earlier turns) on the provider's side. A later request with a byte-identical prefix reads it from the cache instead of reprocessing it, which bills those tokens at a fraction of the normal input price and shortens the time to first token. Some providers cache automatically above a minimum length; Anthropic uses explicit cache_control breakpoints. Put stable content first and variable content last, and watch the cache fields in the usage data.",
+      code: {
+        lang: "python",
+        source:
+          "from anthropic import Anthropic\n\nclient = Anthropic()\nRULEBOOK = open(\"rulebook.txt\").read()               # long and never changes\n\ndef ask(question: str):\n    return client.messages.create(\n        model=\"claude-sonnet-5-5\",                    # use your current model\n        max_tokens=500,\n        system=[\n            {\"type\": \"text\", \"text\": \"Answer using the rulebook only.\"},\n            {\"type\": \"text\", \"text\": RULEBOOK,\n             \"cache_control\": {\"type\": \"ephemeral\"}},  # cache everything up to here\n        ],\n        messages=[{\"role\": \"user\", \"content\": question}],  # only this part changes\n    )\n\nr = ask(\"Can I park here on Sundays?\")\nprint(r.usage.cache_creation_input_tokens, r.usage.cache_read_input_tokens)",
+      },
+      pitfalls: [
+        "Any change in the prefix, even a timestamp or a reordered tool list, misses the cache.",
+        "Caches expire after a few minutes without use; low-traffic apps may rarely hit them.",
+        "Writing to the cache can cost more than a normal request; it pays off only when the prefix is reused.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/build-with-claude/prompt-caching",
+    },
+    demo: "PromptCachingDemo",
+    related: ["llm-05", "system-design-04", "llm-13", "llm-08"],
     projects: ["build-llm"],
-    keywords: ["prompt", "caching"],
+    keywords: ["prompt caching", "cache", "prefix", "cost", "latency", "reuse", "cache_control"],
   },
   {
     id: "llm-13",
@@ -366,9 +406,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Input, output and cached tokens cost different amounts. Know your cost per call.",
-    related: ["llm-01", "evals-19", "system-design-20"],
+    kid: "A taxi charges for every kilometre you ride. The computer charges for every little word piece it reads and writes, and writing usually costs more than reading.",
+    realWorld: {
+      title: "The parrot's price list",
+      text: "The library pays the parrot per note card. Reading a card of the question is cheap, writing a card of the answer costs several times more, and re-reading a card that is already open on the desk costs almost nothing. A visitor who pastes a whole book and asks for a one-line answer pays mostly for reading; one who asks for a long essay pays mostly for writing.",
+    },
+    engineering: {
+      text: "Providers price input tokens, output tokens and cached input tokens separately, quoted per million tokens. Output is typically several times the input price, and reasoning or thinking tokens are billed as output. Cost per call is input tokens times the input price plus output tokens times the output price, adjusted for cache reads and writes. Log the usage object of every response, compute cost per request and per feature, and alert on spikes, because one prompt change can multiply the bill overnight.",
+      code: {
+        lang: "python",
+        source:
+          "PRICES = {  # USD per 1M tokens - example numbers, check your provider's price page\n    \"input\": 3.00, \"output\": 15.00, \"cache_read\": 0.30,\n}\n\ndef cost_usd(usage) -> float:\n    return (\n        usage.input_tokens * PRICES[\"input\"]                      # fresh input\n        + usage.output_tokens * PRICES[\"output\"]\n        + (usage.cache_read_input_tokens or 0) * PRICES[\"cache_read\"]\n    ) / 1_000_000\n\n# 2,000 tokens in + 500 out = $0.006 + $0.0075 = $0.0135 per call\n# x 100,000 calls a month  = $1,350",
+      },
+      pitfalls: [
+        "Output is the expensive side: ask for shorter answers before you shorten prompts.",
+        "Prices differ per model and change often; keep them in config, not in code.",
+        "Long conversations re-send every earlier message, so each new turn costs more than the last.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/about-claude/pricing",
+    },
+    demo: "TokenPricingDemo",
+    related: ["llm-01", "llm-12", "evals-19", "system-design-20"],
     projects: ["build-llm"],
-    keywords: ["token", "pricing"],
+    keywords: ["token pricing", "cost", "price", "input tokens", "output tokens", "budget", "bill"],
   },
   {
     id: "llm-14",
@@ -379,9 +439,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Confident but wrong answers. Reduce them with grounding, citations and permission to say 'I don't know'.",
-    related: ["rag-16", "evals-06"],
+    kid: "Sometimes a friend who doesn't know an answer makes one up so they don't look silly. Computers can do that too, so we give them the right book to read and let them say: I don't know.",
+    realWorld: {
+      title: "The parrot that never says 'I don't know'",
+      text: "Visitors love the parrot because it always answers. But asked about a book the library does not have, it invents a title, an author and even a page number, all with total confidence. The librarian fixes this three ways: she puts the real book on the desk (grounding), asks the parrot to point at the page it used (citations), and praises it for saying 'I don't know'.",
+    },
+    engineering: {
+      text: "LLMs generate the most plausible continuation, not verified facts, so they can produce fluent, confident and false statements: invented citations, APIs, numbers or events. Mitigations: ground answers in retrieved sources (RAG), require citations to specific passages, explicitly allow 'I don't know', use low temperature for factual tasks, and check outputs with rules or an LLM judge for faithfulness. Measure the hallucination rate on a golden dataset instead of trusting spot checks.",
+      code: {
+        lang: "python",
+        source:
+          "SYSTEM = \"\"\"Answer ONLY from the documents below.\nAfter every claim, add the id of the document you used, like [doc-2].\nIf the documents do not contain the answer, reply exactly: I don't know.\"\"\"\n\ndef answer(question: str, docs: list[dict]) -> str:\n    context = \"\\n\".join(f\"<doc id='{d['id']}'>{d['text']}</doc>\" for d in docs)\n    text = call_llm(system=SYSTEM, user=f\"{context}\\n\\nQuestion: {question}\")\n    if text.strip() != \"I don't know\" and \"[doc-\" not in text:\n        raise ValueError(\"Answer has no citation - treat it as unverified\")\n    return text",
+      },
+      pitfalls: [
+        "Grounding reduces hallucinations but does not remove them; models can still misread the source.",
+        "Confident wording says nothing about correctness.",
+        "Invented package names in generated code are a real security risk; check dependencies exist.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/test-and-evaluate/strengthen-guardrails/reduce-hallucinations",
+    },
+    demo: "HallucinationDemo",
+    related: ["rag-16", "evals-06", "llm-06", "rag-18"],
     projects: ["build-llm"],
-    keywords: ["hallucinations"],
+    keywords: ["hallucinations", "made up", "wrong answers", "grounding", "citations", "i don't know", "factuality"],
   },
   {
     id: "llm-15",
@@ -392,9 +472,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Sending images, PDFs or audio to the model along with text.",
-    related: [],
+    kid: "You can explain your broken bike in words, or just show a picture. Some computers can look at pictures, read whole pages and listen to sounds, not only read typed words.",
+    realWorld: {
+      title: "Showing the parrot a photo",
+      text: "A visitor holds up a photo of a crumpled shop receipt and asks: 'How much did I spend on fruit?' A parrot that only reads typed words is stuck. A parrot that can also look at pictures reads the receipt, finds the apples and bananas and adds them up. Some parrots can also listen to a voice message or flip through a whole PDF.",
+    },
+    engineering: {
+      text: "Multimodal models accept images, PDFs and sometimes audio or video next to text in the same message. Each image or page is turned into tokens, so a large image can cost as much as hundreds or thousands of words; resize to what the task needs. Common uses: document and receipt extraction, chart reading, screenshot debugging and UI checks. Put the image before the question, give one task per call, and combine with structured outputs for reliable extraction.",
+      code: {
+        lang: "python",
+        source:
+          "import base64\nfrom anthropic import Anthropic\n\nclient = Anthropic()\nimage = base64.standard_b64encode(open(\"receipt.jpg\", \"rb\").read()).decode()\n\nreply = client.messages.create(\n    model=\"claude-sonnet-5-5\",                       # use your current model\n    max_tokens=300,\n    messages=[{\n        \"role\": \"user\",\n        \"content\": [\n            {\"type\": \"image\", \"source\": {\"type\": \"base64\",\n             \"media_type\": \"image/jpeg\", \"data\": image}},\n            {\"type\": \"text\", \"text\": \"How much did I spend on fruit? List the lines you used.\"},\n        ],\n    }],\n)\nprint(reply.content[0].text)",
+      },
+      pitfalls: [
+        "Images are billed as tokens; big images and many PDF pages get expensive fast.",
+        "Small text, handwriting and dense tables are read less reliably; crop and enlarge the part that matters.",
+        "Images can hide instructions too: treat them as untrusted input.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/build-with-claude/vision",
+    },
+    demo: "MultimodalDemo",
+    related: ["llm-13", "rag-15", "security-02", "llm-11"],
     projects: ["build-llm"],
-    keywords: ["multimodal", "inputs"],
+    keywords: ["multimodal", "images", "vision", "pdf", "audio", "photo", "screenshot"],
   },
   {
     id: "llm-16",
@@ -405,9 +505,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Train small adapter matrices instead of all the weights. A cheap way to specialise a model.",
-    related: ["llm-17", "llm-18", "llm-19"],
+    kid: "Instead of rebuilding a whole bike to make it faster, you clip on a small motor. LoRA clips small new parts onto a big model and only trains those, so it is quick and cheap.",
+    realWorld: {
+      title: "Sticky notes in the parrot's books",
+      text: "Teaching the parrot medical words by rewriting every book in the library would take years. Instead, the librarian adds a thin stack of sticky notes to each shelf that slightly change how the parrot reads it. Only the sticky notes are written and trained; the books stay untouched. Swap the notes and the same parrot becomes a legal or a cooking expert.",
+    },
+    engineering: {
+      text: "LoRA (Low-Rank Adaptation) freezes the pretrained weight matrix W and learns a low-rank update B·A, where A is r×d and B is d×r with a small rank r (often 8-64). For one 4096×4096 projection, rank 16 trains about 131k parameters instead of 16.8 million, under 1%. Adapters are small files that can be merged into the base weights or swapped per task or customer at serving time. Use fine-tuning for style, format or a narrow skill; use RAG for facts that change.",
+      code: {
+        lang: "python",
+        source:
+          "from transformers import AutoModelForCausalLM\nfrom peft import LoraConfig, get_peft_model\n\nmodel = AutoModelForCausalLM.from_pretrained(\"meta-llama/Llama-3.1-8B\")\nconfig = LoraConfig(\n    r=16,                                  # rank: size of the small matrices\n    lora_alpha=32,                         # how strongly the update is applied\n    target_modules=[\"q_proj\", \"v_proj\"],   # which layers get adapters\n    lora_dropout=0.05,\n    task_type=\"CAUSAL_LM\",\n)\nmodel = get_peft_model(model, config)\nmodel.print_trainable_parameters()\n# trainable params: ~6.8M || all params: ~8B || trainable%: ~0.08",
+      },
+      pitfalls: [
+        "Fine-tuning teaches behaviour and style well, new facts poorly; facts belong in RAG.",
+        "A few hundred clean, consistent examples beat thousands of noisy ones.",
+        "Always compare against the base model on a held-out set; it is easy to make a model worse.",
+      ],
+      docsUrl: "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+    },
+    demo: "LoRADemo",
+    related: ["llm-17", "llm-18", "system-design-18", "llm-19"],
     projects: ["build-llm"],
-    keywords: ["fine-tuning", "with", "lora"],
+    keywords: ["lora", "fine-tuning", "adapters", "peft", "low-rank", "training", "specialise"],
   },
   {
     id: "llm-17",
@@ -418,9 +538,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "LoRA on top of a 4-bit quantized base model, so fine-tuning fits on one GPU.",
-    related: ["llm-16", "llm-18"],
+    kid: "To fit a huge puzzle on a small table, you shrink the picture first, then add your small changes on top. QLoRA squeezes a big model so training fits on one computer.",
+    realWorld: {
+      title: "Pocket-size books with sticky notes",
+      text: "The full library does not fit in the librarian's small workroom. So she prints every book as a tiny pocket edition (4-bit quantization) that takes a quarter of the space, then adds her sticky notes (LoRA) on top as usual. The pocket books are slightly harder to read, but everything now fits on one desk and the notes come out almost as good.",
+    },
+    engineering: {
+      text: "QLoRA loads the frozen base model in 4-bit NF4 quantization, adds LoRA adapters in 16-bit, and backpropagates through the quantized weights into the adapters. Double quantization and paged optimizers save more memory. This makes it possible to fine-tune a 7-8B model on one 24 GB consumer GPU, and the original paper fine-tuned a 65B model on a single 48 GB GPU, with quality close to 16-bit LoRA. Each step is slower because weights are dequantized on the fly.",
+      code: {
+        lang: "python",
+        source:
+          "import torch\nfrom transformers import AutoModelForCausalLM, BitsAndBytesConfig\nfrom peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training\n\nbnb = BitsAndBytesConfig(\n    load_in_4bit=True,\n    bnb_4bit_quant_type=\"nf4\",              # 4-bit NormalFloat\n    bnb_4bit_use_double_quant=True,         # also compress the scaling constants\n    bnb_4bit_compute_dtype=torch.bfloat16,\n)\nmodel = AutoModelForCausalLM.from_pretrained(\n    \"meta-llama/Llama-3.1-8B\", quantization_config=bnb)\nmodel = prepare_model_for_kbit_training(model)\nmodel = get_peft_model(model, LoraConfig(\n    r=16, lora_alpha=32, target_modules=\"all-linear\", task_type=\"CAUSAL_LM\"))\n# Base weights take ~5-6 GB instead of ~16 GB in bf16",
+      },
+      pitfalls: [
+        "Merge adapters into the 16-bit base model for deployment, not into the 4-bit one.",
+        "Training steps are slower than with 16-bit LoRA.",
+        "bitsandbytes 4-bit training needs a supported GPU, in practice usually NVIDIA.",
+      ],
+      docsUrl: "https://arxiv.org/abs/2305.14314",
+    },
+    demo: "QLoRADemo",
+    related: ["llm-16", "llm-18", "deployment-10"],
     projects: ["build-llm"],
-    keywords: ["qlora"],
+    keywords: ["qlora", "4-bit", "nf4", "fine-tuning", "single gpu", "memory", "bitsandbytes"],
   },
   {
     id: "llm-18",
@@ -431,9 +571,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Store weights in fewer bits (8-bit, 4-bit) to save memory and run faster, at a small quality cost.",
-    related: ["llm-16", "llm-17", "deployment-11"],
+    kid: "A picture saved with fewer colours takes less space but still looks almost the same. Quantization stores the model's numbers in a simpler way, so it gets smaller and faster.",
+    realWorld: {
+      title: "Rounding the parrot's notes",
+      text: "The parrot's brain is full of very precise numbers like 0.4817263. Writing every one in full fills whole shelves. If the librarian rounds them to 0.48 the books shrink to half; rounding to 0.5 shrinks them to a quarter. The parrot still talks almost as well, but round too hard and it starts to mumble.",
+    },
+    engineering: {
+      text: "Quantization stores weights (and sometimes activations or the KV cache) in fewer bits: going from 16-bit to 8-bit halves memory, 4-bit quarters it. A 7B-parameter model needs about 14 GB in fp16, 7 GB in 8-bit and roughly 4 GB in 4-bit. Post-training methods such as GPTQ, AWQ and the GGUF formats used by llama.cpp and Ollama keep the quality loss small down to about 4 bits; below that it drops quickly. Smaller weights also mean faster generation, because inference is usually limited by memory bandwidth.",
+      code: {
+        lang: "python",
+        source:
+          "def weights_gb(params_billion: float, bits: int) -> float:\n    \"\"\"Memory for the weights alone.\"\"\"\n    return params_billion * 1e9 * bits / 8 / 1e9\n\nfor bits in (16, 8, 4):\n    print(f\"{bits}-bit: {weights_gb(7, bits):.1f} GB\")\n# 16-bit: 14.0 GB   8-bit: 7.0 GB   4-bit: 3.5 GB   (+ KV cache and overhead)\n\n# Run a 4-bit model locally (Ollama serves quantized GGUF models):\n#   ollama run llama3.1:8b",
+      },
+      pitfalls: [
+        "Quality loss differs per task: test on your own eval set, not only leaderboard scores.",
+        "Weights are not the whole memory bill; the KV cache grows with context length and batch size.",
+        "Below 4 bits most models degrade sharply.",
+      ],
+      docsUrl: "https://huggingface.co/docs/transformers/main/en/quantization/overview",
+    },
+    demo: "QuantizationDemo",
+    related: ["llm-17", "deployment-11", "system-design-13", "llm-05"],
     projects: ["build-llm"],
-    keywords: ["quantization"],
+    keywords: ["quantization", "4-bit", "8-bit", "int8", "gguf", "memory", "compression"],
   },
   {
     id: "llm-19",
@@ -444,9 +604,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Train a small 'student' model to copy the answers of a big 'teacher' model.",
-    related: ["llm-16"],
+    kid: "A young cook watches a great chef again and again, then learns to make the same dishes. A small computer brain learns by copying the answers of a big one, and ends up fast and cheap.",
+    realWorld: {
+      title: "The owl teaches a young parrot",
+      text: "The careful owl gives excellent answers but is slow and expensive. So the library asks the owl ten thousand typical questions and writes all its answers into a book. A young parrot is trained on that answer book until it replies the same way. It is not as wise as the owl on everything, but on the library's everyday questions it is nearly as good and many times faster.",
+    },
+    engineering: {
+      text: "Knowledge distillation trains a smaller student model to imitate a larger teacher. Classic distillation matches the teacher's full output probability distribution (soft labels); with API models you usually distil on generated outputs, fine-tuning the student on prompt-response pairs from the teacher. It works best on a narrow, well-defined task, where a small model can come close to a frontier model at a fraction of the cost and latency. Check the teacher provider's terms: some forbid using outputs to train competing models.",
+      code: {
+        lang: "python",
+        source:
+          "# 1. Collect teacher answers for realistic inputs\ndataset = []\nfor ticket in support_tickets[:5000]:\n    label = big_model(f\"Classify this ticket as billing, bug, feature or other:\\n{ticket}\")\n    dataset.append({\"input\": ticket, \"output\": label})\n\n# 2. Fine-tune a small open model on the teacher's answers (e.g. with LoRA)\nstudent = train_student(\"Qwen/Qwen2.5-1.5B-Instruct\", dataset)\n\n# 3. Compare on a held-out golden set before moving traffic\nprint(accuracy(student, golden_set), accuracy(big_model, golden_set))",
+      },
+      pitfalls: [
+        "The student copies the teacher's mistakes too; clean or verify the training data.",
+        "A distilled model is strong only on the task it was distilled for.",
+        "Some model licences and API terms forbid training on their outputs.",
+      ],
+      docsUrl: "https://arxiv.org/abs/1503.02531",
+    },
+    demo: "DistillationDemo",
+    related: ["llm-16", "llm-10", "system-design-01", "llm-20"],
     projects: ["build-llm"],
-    keywords: ["distillation"],
+    keywords: ["distillation", "teacher", "student", "smaller model", "compress", "cheaper"],
   },
   {
     id: "llm-20",
@@ -457,9 +637,29 @@ const concepts: ConceptInput[] = [
     tier: "production",
     official:
       "Open weights you can host yourself (Llama, Qwen, Mistral) vs API-only models (GPT, Claude, Gemini).",
-    related: ["deployment-11", "system-design-13"],
+    kid: "Some toys you can take home, open up and change, others you can only play with at the shop. Open models you can run yourself; closed ones you use through a company's service.",
+    realWorld: {
+      title: "Buying a parrot or renting one",
+      text: "The library can buy its own parrot (open weights): it lives in the building, never leaves, can be retrained freely, but needs a cage, food and a keeper. Or it can rent the world's smartest parrot by phone (a closed API): no cage to clean and always the newest version, but every question leaves the building and the owner sets the price.",
+    },
+    engineering: {
+      text: "Open-weight models (Llama, Qwen, Mistral, Gemma, DeepSeek) can be downloaded, fine-tuned and served on your own hardware or a host you choose, giving data control, deep customisation and predictable cost at high volume, at the price of running GPUs and operations yourself. Closed models (GPT, Claude, Gemini) are API-only, usually lead on the hardest tasks, need no infrastructure and bill per token. Many products mix both: a closed model for hard requests, an open one for high-volume, private or offline work. 'Open weights' is not always open source: read the licence.",
+      code: {
+        lang: "python",
+        source:
+          "from openai import OpenAI\n\n# Same client code, two backends\nclosed = OpenAI()                                         # a vendor's hosted API\nlocal = OpenAI(base_url=\"http://localhost:11434/v1\",      # Ollama's OpenAI-compatible API\n               api_key=\"ollama\")                          # any string works locally\n\ndef ask(client, model: str, question: str) -> str:\n    r = client.chat.completions.create(\n        model=model, messages=[{\"role\": \"user\", \"content\": question}])\n    return r.choices[0].message.content\n\nprint(ask(local, \"llama3.1:8b\", \"Summarise GDPR in one line\"))  # never leaves your machine",
+      },
+      pitfalls: [
+        "Self-hosting is cheaper only at steady high volume; idle GPUs still cost money.",
+        "Open-weight licences can restrict commercial use or user numbers; read them.",
+        "Closed models change versions; pin model ids and re-run your evals when you upgrade.",
+      ],
+      docsUrl: "https://ollama.com/",
+    },
+    demo: "OpenVsClosedDemo",
+    related: ["deployment-11", "system-design-13", "deployment-17", "llm-18"],
     projects: ["build-llm"],
-    keywords: ["open", "closed", "models"],
+    keywords: ["open source", "open weights", "closed models", "api", "llama", "self-hosting", "privacy"],
   },
 ];
 
