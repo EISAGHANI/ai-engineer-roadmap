@@ -3,114 +3,52 @@
 import * as React from "react";
 import type { ComponentType } from "react";
 import { DemoFallback } from "./DemoFrame";
-
-type Loader = () => Promise<{ default: ComponentType }>;
+import type { DemoLoaders } from "./types";
 
 /**
- * Registry: concept.demo string -> lazy loader. Each entry is a tiny function, so the
- * registry stays small even with 160 demos; a demo's code downloads only when shown.
- * The content test checks that every `demo` key used in src/content exists here.
+ * Two-level lazy loading keeps every page light:
+ * 1. an area's registry (a small map of loaders) downloads only when one of its demos is shown,
+ * 2. the demo's own code downloads only when that demo is shown.
+ * Each area registry lives in src/components/demos/<area>/registry.ts.
  */
-const loaders: Record<string, Loader> = {
-  TokenizerDemo: () => import("./llm/TokenizerDemo"),
-  AttentionDemo: () => import("./llm/AttentionDemo"),
-  ContextWindowDemo: () => import("./llm/ContextWindowDemo"),
-  KvCacheDemo: () => import("./llm/KvCacheDemo"),
-  TemperatureDemo: () => import("./llm/TemperatureDemo"),
-  SystemPromptDemo: () => import("./llm/SystemPromptDemo"),
-  FewShotDemo: () => import("./llm/FewShotDemo"),
-  ChainOfThoughtDemo: () => import("./llm/ChainOfThoughtDemo"),
-  ReasoningModelDemo: () => import("./llm/ReasoningModelDemo"),
-  StructuredOutputDemo: () => import("./llm/StructuredOutputDemo"),
-  PromptCachingDemo: () => import("./llm/PromptCachingDemo"),
-  TokenPricingDemo: () => import("./llm/TokenPricingDemo"),
-  HallucinationDemo: () => import("./llm/HallucinationDemo"),
-  MultimodalDemo: () => import("./llm/MultimodalDemo"),
-  LoRADemo: () => import("./llm/LoRADemo"),
-  QLoRADemo: () => import("./llm/QLoRADemo"),
-  QuantizationDemo: () => import("./llm/QuantizationDemo"),
-  DistillationDemo: () => import("./llm/DistillationDemo"),
-  OpenVsClosedDemo: () => import("./llm/OpenVsClosedDemo"),
-  EmbeddingMapDemo: () => import("./rag/EmbeddingMapDemo"),
-  CosineDemo: () => import("./rag/CosineDemo"),
-  ChunkingDemo: () => import("./rag/ChunkingDemo"),
-  VectorDbDemo: () => import("./rag/VectorDbDemo"),
-  PgvectorDemo: () => import("./rag/PgvectorDemo"),
-  HnswDemo: () => import("./rag/HnswDemo"),
-  MetadataFilterDemo: () => import("./rag/MetadataFilterDemo"),
-  Bm25Demo: () => import("./rag/Bm25Demo"),
-  HybridSearchDemo: () => import("./rag/HybridSearchDemo"),
-  RerankDemo: () => import("./rag/RerankDemo"),
-  QueryRewriteDemo: () => import("./rag/QueryRewriteDemo"),
-  HydeDemo: () => import("./rag/HydeDemo"),
-  ContextualRetrievalDemo: () => import("./rag/ContextualRetrievalDemo"),
-  ParentChildDemo: () => import("./rag/ParentChildDemo"),
-  ParsingDemo: () => import("./rag/ParsingDemo"),
-  CitationsDemo: () => import("./rag/CitationsDemo"),
-  GraphRagDemo: () => import("./rag/GraphRagDemo"),
-  AgenticRagDemo: () => import("./rag/AgenticRagDemo"),
-  RecallDemo: () => import("./rag/RecallDemo"),
-  RankMetricsDemo: () => import("./rag/RankMetricsDemo"),
-  ToolCallingDemo: () => import("./agents/ToolCallingDemo"),
-  AgentLoopDemo: () => import("./agents/AgentLoopDemo"),
-  ReActDemo: () => import("./agents/ReActDemo"),
-  PlanningDemo: () => import("./agents/PlanningDemo"),
-  ReflectionDemo: () => import("./agents/ReflectionDemo"),
-  ShortTermMemoryDemo: () => import("./agents/ShortTermMemoryDemo"),
-  LongTermMemoryDemo: () => import("./agents/LongTermMemoryDemo"),
-  McpServerDemo: () => import("./agents/McpServerDemo"),
-  McpClientDemo: () => import("./agents/McpClientDemo"),
-  AgentSkillsDemo: () => import("./agents/AgentSkillsDemo"),
-  HandoffDemo: () => import("./agents/HandoffDemo"),
-  OrchestratorDemo: () => import("./agents/OrchestratorDemo"),
-  LangGraphDemo: () => import("./agents/LangGraphDemo"),
-  AgentsSdkDemo: () => import("./agents/AgentsSdkDemo"),
-  CheckpointsDemo: () => import("./agents/CheckpointsDemo"),
-  HumanInLoopDemo: () => import("./agents/HumanInLoopDemo"),
-  ContextEngineeringDemo: () => import("./agents/ContextEngineeringDemo"),
-  CompactionDemo: () => import("./agents/CompactionDemo"),
-  StopConditionsDemo: () => import("./agents/StopConditionsDemo"),
-  A2ADemo: () => import("./agents/A2ADemo"),
-  GoldenDatasetDemo: () => import("./evals/GoldenDatasetDemo"),
-  ErrorAnalysisDemo: () => import("./evals/ErrorAnalysisDemo"),
-  JudgeDemo: () => import("./evals/JudgeDemo"),
-  PairwiseDemo: () => import("./evals/PairwiseDemo"),
-  RubricDemo: () => import("./evals/RubricDemo"),
-  FaithfulnessDemo: () => import("./evals/FaithfulnessDemo"),
-  AnswerRelevanceDemo: () => import("./evals/AnswerRelevanceDemo"),
-  ContextPrecisionDemo: () => import("./evals/ContextPrecisionDemo"),
-  ToolCallAccuracyDemo: () => import("./evals/ToolCallAccuracyDemo"),
-  TrajectoryDemo: () => import("./evals/TrajectoryDemo"),
-  RegressionCiDemo: () => import("./evals/RegressionCiDemo"),
-  AbTestDemo: () => import("./evals/AbTestDemo"),
-  HumanLabelingDemo: () => import("./evals/HumanLabelingDemo"),
-  SyntheticDataDemo: () => import("./evals/SyntheticDataDemo"),
-  TracingDemo: () => import("./evals/TracingDemo"),
-  LangfuseDemo: () => import("./evals/LangfuseDemo"),
-  OtelDemo: () => import("./evals/OtelDemo"),
-  P95Demo: () => import("./evals/P95Demo"),
-  CostPerRequestDemo: () => import("./evals/CostPerRequestDemo"),
-  FeedbackLoopDemo: () => import("./evals/FeedbackLoopDemo"),
+const areaRegistries: Record<string, () => Promise<{ loaders: DemoLoaders }>> = {
+  llm: () => import("./llm/registry"),
+  rag: () => import("./rag/registry"),
+  agents: () => import("./agents/registry"),
+  evals: () => import("./evals/registry"),
+  deployment: () => import("./deployment/registry"),
 };
 
 const cache = new Map<string, React.LazyExoticComponent<ComponentType>>();
 
-function lazyFor(name: string) {
-  let component = cache.get(name);
+function MissingDemo() {
+  return <p className="rounded-card border border-dashed border-border p-4 text-sm text-muted">This demo could not be loaded.</p>;
+}
+
+function lazyFor(area: string, name: string) {
+  const key = `${area}/${name}`;
+  let component = cache.get(key);
   if (!component) {
-    component = React.lazy(loaders[name]);
-    cache.set(name, component);
+    component = React.lazy(async () => {
+      const registry = areaRegistries[area];
+      if (!registry) return { default: MissingDemo };
+      const { loaders } = await registry();
+      const loader = loaders[name];
+      return loader ? loader() : { default: MissingDemo };
+    });
+    cache.set(key, component);
   }
   return component;
 }
 
-export function hasDemo(name: string | undefined): name is string {
-  return Boolean(name && name in loaders);
+/** True when the area has a demo registry (the content test checks every demo key exists). */
+export function hasDemo(area: string, name: string | undefined): name is string {
+  return Boolean(name && area in areaRegistries);
 }
 
-/** Renders a registered demo, loading its code on first use. */
-export function DemoSlot({ name }: { name: string }) {
-  const Lazy = lazyFor(name);
+/** Renders a registered demo, loading its registry and code on first use. */
+export function DemoSlot({ area, name }: { area: string; name: string }) {
+  const Lazy = lazyFor(area, name);
   return (
     <React.Suspense fallback={<DemoFallback />}>
       <Lazy />
@@ -118,4 +56,4 @@ export function DemoSlot({ name }: { name: string }) {
   );
 }
 
-export const DEMO_KEYS = Object.keys(loaders);
+export const DEMO_AREAS = Object.keys(areaRegistries);

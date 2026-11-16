@@ -18,7 +18,7 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
   - [x] 7b RAG (all 20)
   - [x] 7c AI Agents (all 20)
   - [x] 7d Evals (all 20)
-  - [ ] 7e Deployment
+  - [x] 7e Deployment
   - [ ] 7f Backend
   - [ ] 7g AI System Design
   - [ ] 7h AI Security
@@ -29,7 +29,8 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
   - [x] 8b RAG: 20 demos (embedding map, cosine, chunking, vector DB, pgvector SQL, HNSW hops, filters, BM25, RRF, rerank, query rewrite, HyDE, contextual retrieval, parent-child, parsing, citations, GraphRAG, agentic RAG, Recall@k, MRR/nDCG)
   - [x] 8c AI Agents: 20 demos (tool calling, agent loop, ReAct, planning, reflection, short/long-term memory, MCP server/client, skills, handoffs, orchestrator-worker, LangGraph, Agents SDK trace, checkpoints, human-in-the-loop, context engineering, compaction, stop conditions, A2A)
   - [x] 8d Evals: 20 demos (golden set regression, error piles, judge vs exact match, pairwise stability, rubric, faithfulness claims, relevance, context precision, tool call accuracy, trajectory checks, CI gate, A/B significance, judge-human agreement, synthetic data review, trace waterfall, prompt labels, OTel span, p95 histogram, cost per feature, feedback loop)
-  - [ ] 8e–8h other areas
+  - [x] 8e Deployment demos (20) + per-area demo registries (each area page loads only its own demos)
+  - [ ] 8f–8h Backend, AI System Design, AI Security
 - [x] **Step 9 — Projects, portfolio, project modal** with live GitHub stats (ISR 1 h), `?project=` deep links, `/projects/[id]` pages with README.
   - [ ] Create the project repositories named in `projects.ts` (or rename them there) and add screenshots to `public/projects/`.
 - [x] **Step 10 — Progress page** (rings, 160-tick grid, streak, export/import, reset), theme / simple mode / reduce-motion toggles, About, 404.

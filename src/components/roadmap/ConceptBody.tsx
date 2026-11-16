@@ -41,7 +41,7 @@ export function ConceptBody({ view, onOpenProject, showNav }: ConceptBodyProps) 
     if (simple && layer === "eng") setLayer("kid");
   }, [simple, layer]);
 
-  const demoName = hasDemo(c.demo) ? c.demo : undefined;
+  const demoName = hasDemo(c.area, c.demo) ? c.demo : undefined;
   const Illustration = !demoName && c.illustration ? illustrations[c.illustration] : undefined;
 
   const tabs = [
@@ -136,7 +136,7 @@ export function ConceptBody({ view, onOpenProject, showNav }: ConceptBodyProps) 
       <section className="mt-6" aria-label="Try it">
         <h3 className="mb-2 text-sm font-medium text-muted">Try it</h3>
         {demoName ? (
-          <DemoSlot name={demoName} />
+          <DemoSlot area={c.area} name={demoName} />
         ) : Illustration ? (
           <div className="overflow-hidden rounded-card border border-border bg-surface-2">
             <Illustration />
