@@ -20,7 +20,7 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
   - [x] 7d Evals (all 20)
   - [x] 7e Deployment
   - [x] 7f Backend
-  - [ ] 7g AI System Design
+  - [x] 7g AI System Design
   - [ ] 7h AI Security
   - [ ] When 7a is complete, make `kid`, `realWorld`, `engineering` required in `schema.ts` for the LLM area (and per area as each finishes), so placeholders cannot ship.
 - [ ] **Step 8 — Interactive demos, one area at a time.** Every base concept (01–10) gets a `demo`; every production concept gets a `demo` or an `illustration`. Follow the demo contract (`DemoFrame`, 320 px, Reset, keyboard, reduced-motion step mode). Register in `src/components/demos/index.tsx`.
@@ -31,7 +31,8 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
   - [x] 8d Evals: 20 demos (golden set regression, error piles, judge vs exact match, pairwise stability, rubric, faithfulness claims, relevance, context precision, tool call accuracy, trajectory checks, CI gate, A/B significance, judge-human agreement, synthetic data review, trace waterfall, prompt labels, OTel span, p95 histogram, cost per feature, feedback loop)
   - [x] 8e Deployment demos (20) + per-area demo registries (each area page loads only its own demos)
   - [x] 8f Backend demos (20)
-  - [ ] 8g–8h AI System Design, AI Security
+  - [x] 8g AI System Design demos (20)
+  - [ ] 8h AI Security demos
 - [x] **Step 9 — Projects, portfolio, project modal** with live GitHub stats (ISR 1 h), `?project=` deep links, `/projects/[id]` pages with README.
   - [ ] Create the project repositories named in `projects.ts` (or rename them there) and add screenshots to `public/projects/`.
 - [x] **Step 10 — Progress page** (rings, 160-tick grid, streak, export/import, reset), theme / simple mode / reduce-motion toggles, About, 404.
