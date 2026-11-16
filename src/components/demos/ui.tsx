@@ -1,7 +1,68 @@
 "use client";
 
 import * as React from "react";
+import { Play, StepForward } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMotionSafe } from "@/lib/motion";
+
+/**
+ * Reveal a sequence of steps one by one. "Play" animates when motion is allowed and
+ * shows everything at once when it is reduced; "Next" always advances by one step.
+ */
+export function useStepper(total: number, intervalMs = 650) {
+  const motionSafe = useMotionSafe();
+  const [shown, setShown] = React.useState(0);
+  const [playing, setPlaying] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!playing) return;
+    if (shown >= total) {
+      setPlaying(false);
+      return;
+    }
+    const t = window.setTimeout(() => setShown((s) => s + 1), intervalMs);
+    return () => window.clearTimeout(t);
+  }, [playing, shown, total, intervalMs]);
+
+  const play = React.useCallback(() => {
+    if (motionSafe) {
+      setShown(0);
+      setPlaying(true);
+    } else {
+      setShown(total);
+    }
+  }, [motionSafe, total]);
+  const next = React.useCallback(() => setShown((s) => Math.min(total, s + 1)), [total]);
+  const reset = React.useCallback(() => {
+    setShown(0);
+    setPlaying(false);
+  }, []);
+
+  return { shown, playing, play, next, reset, done: shown >= total };
+}
+
+export function StepControls({
+  onPlay,
+  onNext,
+  done,
+  playLabel = "Run",
+}: {
+  onPlay: () => void;
+  onNext: () => void;
+  done: boolean;
+  playLabel?: string;
+}) {
+  return (
+    <span className="inline-flex gap-1.5">
+      <ActionButton onClick={onPlay}>
+        <Play className="h-3.5 w-3.5" aria-hidden="true" /> {playLabel}
+      </ActionButton>
+      <ActionButton onClick={onNext} disabled={done} variant="secondary">
+        <StepForward className="h-3.5 w-3.5" aria-hidden="true" /> Next step
+      </ActionButton>
+    </span>
+  );
+}
 
 /** Small shared building blocks for demos. */
 
