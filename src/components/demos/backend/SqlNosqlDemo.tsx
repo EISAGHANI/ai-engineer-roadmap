@@ -71,7 +71,7 @@ export default function SqlNosqlDemo() {
       <p className="mt-2 rounded-lg px-3 py-2 text-xs" aria-live="polite" style={{ backgroundColor: `color-mix(in srgb, ${good ? "var(--good)" : "var(--warn)"} 15%, transparent)` }}>
         {answer}
       </p>
-      <p className="mt-1 text-[11px] text-muted">Postgres with a JSONB column gives you much of both, which is why it's the usual default.</p>
+      <p className="mt-1 text-[11px] text-muted">Postgres with a JSONB column gives you much of both, which is why it&apos;s the usual default.</p>
     </DemoFrame>
   );
 }
