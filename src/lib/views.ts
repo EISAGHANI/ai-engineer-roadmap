@@ -31,7 +31,16 @@ function conceptRef(c: Concept) {
 export async function buildConceptView(c: Concept, withNav = false): Promise<ConceptView> {
   const area = getArea(c.area);
   const related = c.related.map((id) => getConcept(id)).filter((x): x is Concept => Boolean(x)).map(conceptRef);
-  const projects = getProjectsForConcept(c.id).map((p) => ({ id: p.id, title: p.title, kind: p.kind, status: p.status }));
+  // Projects the concept names, plus projects that list the concept, without duplicates
+  const linked = [...c.projects.map((id) => getProject(id)), ...getProjectsForConcept(c.id)].filter(
+    (p): p is Project => Boolean(p),
+  );
+  const projects = Array.from(new Map(linked.map((p) => [p.id, p])).values()).map((p) => ({
+    id: p.id,
+    title: p.title,
+    kind: p.kind,
+    status: p.status,
+  }));
   const codeHtml = await highlight(c.engineering?.code);
   let prev: ConceptView["prev"];
   let next: ConceptView["next"];

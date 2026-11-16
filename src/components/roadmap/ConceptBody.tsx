@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useSettings } from "@/lib/settings";
 import { useProgress, useHydrated } from "@/lib/progress";
-import { demos } from "@/components/demos";
+import { DemoSlot, hasDemo } from "@/components/demos";
 import { illustrations } from "@/components/illustrations";
 import { areaVar, pad2 } from "@/lib/utils";
 import type { ConceptView } from "./types";
@@ -41,8 +41,8 @@ export function ConceptBody({ view, onOpenProject, showNav }: ConceptBodyProps) 
     if (simple && layer === "eng") setLayer("kid");
   }, [simple, layer]);
 
-  const Demo = c.demo ? demos[c.demo] : undefined;
-  const Illustration = !Demo && c.illustration ? illustrations[c.illustration] : undefined;
+  const demoName = hasDemo(c.demo) ? c.demo : undefined;
+  const Illustration = !demoName && c.illustration ? illustrations[c.illustration] : undefined;
 
   const tabs = [
     { id: "kid", label: "Explain like I'm 8", icon: <Baby className="h-4 w-4" aria-hidden="true" /> },
@@ -135,8 +135,8 @@ export function ConceptBody({ view, onOpenProject, showNav }: ConceptBodyProps) 
 
       <section className="mt-6" aria-label="Try it">
         <h3 className="mb-2 text-sm font-medium text-muted">Try it</h3>
-        {Demo ? (
-          <Demo />
+        {demoName ? (
+          <DemoSlot name={demoName} />
         ) : Illustration ? (
           <div className="overflow-hidden rounded-card border border-border bg-surface-2">
             <Illustration />

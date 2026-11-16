@@ -15,7 +15,7 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
 - [x] **Step 6 — Area pages, concept cards with three layers, 160 concept pages, demo registry.**
 - [ ] **Step 7 — Write the content, one area at a time** (`kid`, `realWorld`, `engineering`, `related`, `keywords`), in phase order. Run `npm run check:kid` after each file. Commit per area: `content: <area> concepts 01-20`.
   - [x] 7a LLM (all 20)
-  - [ ] 7b RAG
+  - [x] 7b RAG (all 20)
   - [ ] 7c AI Agents
   - [ ] 7d Evals
   - [ ] 7e Deployment
@@ -26,7 +26,8 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
 - [ ] **Step 8 — Interactive demos, one area at a time.** Every base concept (01–10) gets a `demo`; every production concept gets a `demo` or an `illustration`. Follow the demo contract (`DemoFrame`, 320 px, Reset, keyboard, reduced-motion step mode). Register in `src/components/demos/index.tsx`.
   - [x] 8a LLM base concepts 01–10: Tokenizer, TransformerStack (illustration), Attention, ContextWindow, KvCache, Temperature, SystemPrompt, FewShot, ChainOfThought, ReasoningModel
   - [x] 8a LLM production concepts 11–20: StructuredOutput, PromptCaching, TokenPricing, Hallucination, Multimodal, LoRA, QLoRA, Quantization, Distillation, OpenVsClosed
-  - [ ] 8b–8h other areas
+  - [x] 8b RAG: 20 demos (embedding map, cosine, chunking, vector DB, pgvector SQL, HNSW hops, filters, BM25, RRF, rerank, query rewrite, HyDE, contextual retrieval, parent-child, parsing, citations, GraphRAG, agentic RAG, Recall@k, MRR/nDCG)
+  - [ ] 8c–8h other areas
 - [x] **Step 9 — Projects, portfolio, project modal** with live GitHub stats (ISR 1 h), `?project=` deep links, `/projects/[id]` pages with README.
   - [ ] Create the project repositories named in `projects.ts` (or rename them there) and add screenshots to `public/projects/`.
 - [x] **Step 10 — Progress page** (rings, 160-tick grid, streak, export/import, reset), theme / simple mode / reduce-motion toggles, About, 404.

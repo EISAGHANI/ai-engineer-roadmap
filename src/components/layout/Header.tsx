@@ -6,10 +6,13 @@ import { usePathname } from "next/navigation";
 import { Search, Sun, Moon, Sparkles, Menu, X, Accessibility } from "lucide-react";
 import { useSettings } from "@/lib/settings";
 import { useProgress, useHydrated, countUsed } from "@/lib/progress";
+import dynamic from "next/dynamic";
 import { ProgressRing } from "@/components/ui/ProgressRing";
-import { CommandPalette } from "./CommandPalette";
 import type { SearchItem } from "@/lib/search";
 import { cn, areaVar } from "@/lib/utils";
+
+// Search (and fuse.js) loads only the first time the palette is opened.
+const CommandPalette = dynamic(() => import("./CommandPalette").then((m) => m.CommandPalette), { ssr: false });
 
 export interface HeaderArea {
   id: string;
@@ -26,6 +29,10 @@ interface HeaderProps {
 export function Header({ areas, searchItems, totalConcepts }: HeaderProps) {
   const pathname = usePathname();
   const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const [paletteLoaded, setPaletteLoaded] = React.useState(false);
+  React.useEffect(() => {
+    if (paletteOpen) setPaletteLoaded(true);
+  }, [paletteOpen]);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const theme = useSettings((s) => s.theme);
   const toggleTheme = useSettings((s) => s.toggleTheme);
@@ -192,7 +199,9 @@ export function Header({ areas, searchItems, totalConcepts }: HeaderProps) {
         </nav>
       )}
 
-      <CommandPalette items={searchItems} areaNames={areaNames} open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      {paletteLoaded && (
+        <CommandPalette items={searchItems} areaNames={areaNames} open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      )}
     </header>
   );
 }
