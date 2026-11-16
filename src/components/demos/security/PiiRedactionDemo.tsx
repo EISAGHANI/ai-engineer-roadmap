@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { DemoFrame } from "../DemoFrame";
-import { Switch } from "@/components/ui/Switch";
 
 type Entity = "PERSON" | "PHONE" | "EMAIL" | "IBAN";
 const RULES: Array<{ type: Entity; re: RegExp }> = [
