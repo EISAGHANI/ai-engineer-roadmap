@@ -174,9 +174,29 @@ const concepts: ConceptInput[] = [
     tier: "base",
     official:
       "Sampling knobs. Low values give predictable answers, high values give varied ones.",
-    related: ["llm-10"],
+    kid: "When the parrot picks its next word, a dial decides how brave it is. Turn the dial low and it says the safe, usual word; turn it high and it picks surprising ones.",
+    realWorld: {
+      title: "The parrot's dice",
+      text: "For every next word the parrot has a list of choices, each with a chance: 'mat' 60%, 'sofa' 25%, 'moon' 2%. Temperature is how much it shakes that list before choosing: low keeps the favourite on top, high flattens the list so rare words get picked. Top-p says: only roll among the words that together make up the top 90%, and throw the silly ones away.",
+    },
+    engineering: {
+      text: "At each step the model outputs logits over its vocabulary. Temperature T divides the logits before the softmax: T < 1 sharpens the distribution (more deterministic), T > 1 flattens it (more diverse), and T = 0 is effectively greedy decoding. Top-p (nucleus sampling) keeps the smallest set of tokens whose cumulative probability reaches p and samples only from that set, cutting off the long tail. Use low temperature for extraction, classification and code, higher for brainstorming, and change one knob at a time.",
+      code: {
+        lang: "python",
+        source:
+          "import numpy as np\n\ndef sample(logits, temperature=1.0, top_p=1.0, rng=np.random.default_rng()):\n    if temperature == 0:\n        return int(np.argmax(logits))               # greedy: always the top word\n    probs = np.exp((logits - logits.max()) / temperature)\n    probs /= probs.sum()                             # softmax with temperature\n    order = np.argsort(probs)[::-1]                  # most likely first\n    cut = np.searchsorted(np.cumsum(probs[order]), top_p) + 1\n    keep = order[:cut]                               # nucleus: smallest set reaching top_p\n    return int(rng.choice(keep, p=probs[keep] / probs[keep].sum()))\n\n# With an API you only set the knobs:\n# client.messages.create(..., temperature=0.2)   # factual answers, code",
+      },
+      pitfalls: [
+        "Temperature 0 does not guarantee identical outputs; batching and hardware can still change results.",
+        "Tuning temperature and top-p together makes the effect hard to reason about; adjust one.",
+        "Some reasoning models do not accept custom temperature values.",
+      ],
+      docsUrl: "https://huggingface.co/blog/how-to-generate",
+    },
+    demo: "TemperatureDemo",
+    related: ["llm-10", "llm-14"],
     projects: ["build-llm"],
-    keywords: ["temperature", "and", "top-p"],
+    keywords: ["temperature", "top-p", "sampling", "randomness", "creativity", "nucleus", "deterministic"],
   },
   {
     id: "llm-07",
@@ -187,9 +207,29 @@ const concepts: ConceptInput[] = [
     tier: "base",
     official:
       "Standing instructions that set the model's role, rules and output style.",
-    related: ["llm-08", "security-01"],
+    kid: "Before a game starts, the teacher tells everyone the rules. A system prompt is the rule card the computer reads first, so it knows who to be and how to answer.",
+    realWorld: {
+      title: "The parrot's job card",
+      text: "Before the parrot meets any visitor, the librarian pins a card above its perch: 'You are a children's science guide. Use short sentences. Never give medical advice.' Every question is answered with that card in view, so the same parrot can be a strict exam coach in one room and a friendly storyteller in another.",
+    },
+    engineering: {
+      text: "The system prompt is a separate message (the `system` parameter in Anthropic's Messages API, a system or developer role message in OpenAI's) that frames every turn: role, task, constraints, tone, output format and what to do when unsure. Keep stable instructions here and per-request data in the user turn. Be explicit, give the reason behind each rule, and version system prompts like code, because one small edit changes behaviour in every conversation.",
+      code: {
+        lang: "python",
+        source:
+          "from anthropic import Anthropic\n\nclient = Anthropic()\nSYSTEM = \"\"\"You are a patient tutor for absolute beginners.\n- Explain in at most 3 short sentences, then give one everyday example.\n- If you are not sure, say \"I don't know\" instead of guessing.\n- Answer in the language the user writes in.\"\"\"\n\nreply = client.messages.create(\n    model=\"claude-sonnet-5-5\",   # use your current model\n    max_tokens=300,\n    system=SYSTEM,                # standing instructions for every turn\n    messages=[{\"role\": \"user\", \"content\": \"What is a token?\"}],\n)\nprint(reply.content[0].text)",
+      },
+      pitfalls: [
+        "A system prompt is not a security boundary: users can try to override it with prompt injection.",
+        "Never put secrets or API keys in it; assume it can leak.",
+        "A long list of contradictory rules is followed less reliably than a few clear ones.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/system-prompts",
+    },
+    demo: "SystemPromptDemo",
+    related: ["llm-08", "security-01", "deployment-16"],
     projects: ["build-llm"],
-    keywords: ["system", "prompts"],
+    keywords: ["system prompt", "role", "instructions", "persona", "rules", "tone", "style"],
   },
   {
     id: "llm-08",
@@ -200,9 +240,29 @@ const concepts: ConceptInput[] = [
     tier: "base",
     official:
       "Put 2-5 worked examples in the prompt so the model copies the pattern.",
-    related: ["llm-07"],
+    kid: "If you show a friend two or three finished puzzles, they quickly see how to solve the next one. Giving the computer a few examples works the same way.",
+    realWorld: {
+      title: "Showing the parrot how it's done",
+      text: "The librarian wants book labels in one exact style. Instead of explaining rules, she shows the parrot three finished labels: 'Dune | Herbert | Sci-Fi', 'Emma | Austen | Classic', 'It | King | Horror'. Then she hands it a new book. The parrot copies the pattern, separators and all, because examples teach a format better than long instructions.",
+    },
+    engineering: {
+      text: "Few-shot prompting puts 2-5 input/output pairs before the real input. The model infers the format, label set, tone and edge-case handling from them (in-context learning) with no training. Pick examples that are diverse and cover tricky cases, keep their format identical, and wrap them in clear delimiters such as XML tags. Examples cost input tokens on every call, so pair them with prompt caching when the prefix is stable.",
+      code: {
+        lang: "python",
+        source:
+          "examples = [\n    (\"I waited 40 minutes and the food was cold.\", \"negative\"),\n    (\"Friendly staff, will come back!\", \"positive\"),\n    (\"It was okay, nothing special.\", \"neutral\"),\n]\nshots = \"\\n\".join(\n    f\"<example><review>{t}</review><label>{l}</label></example>\" for t, l in examples\n)\nprompt = f\"\"\"Classify the review as positive, negative or neutral.\n{shots}\n<review>The pizza was great but delivery took forever.</review>\n<label>\"\"\"\n# The model continues the pattern with one label, e.g. \"neutral\"",
+      },
+      pitfalls: [
+        "The model copies everything, including mistakes and accidental patterns such as every example having the same length.",
+        "Unbalanced examples bias the output toward the most common label.",
+        "Three to five good examples usually beat twenty average ones, and cost far fewer tokens.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/multishot-prompting",
+    },
+    demo: "FewShotDemo",
+    related: ["llm-07", "llm-12", "llm-11"],
     projects: ["build-llm"],
-    keywords: ["few-shot", "prompting"],
+    keywords: ["few-shot", "examples", "in-context learning", "pattern", "format", "multishot"],
   },
   {
     id: "llm-09",
@@ -213,9 +273,29 @@ const concepts: ConceptInput[] = [
     tier: "base",
     official:
       "Ask the model to reason step by step before it answers. Helps on multi-step problems.",
+    kid: "When the teacher asks a hard sum, writing each step on paper helps you get it right. Asking the computer to think step by step does the same thing.",
+    realWorld: {
+      title: "Working it out on scrap paper",
+      text: "A visitor asks the parrot: 'A book costs 12 euros. I have 50 and buy three. How much is left?' Blurting out a number, the parrot often gets it wrong. When the librarian adds 'work it out step by step first', the parrot writes: three books cost 36, 50 minus 36 is 14, so 14 euros are left. Each written step gives the next one something solid to stand on.",
+    },
+    engineering: {
+      text: "Chain-of-thought prompting asks the model to write intermediate reasoning before the final answer, for example 'Think step by step' or a <thinking> section followed by an <answer> section. Each generated token conditions the next, so writing out steps lets the model spend more computation on arithmetic, logic and planning. Keep reasoning and answer separate so your code parses only the answer, and remember that reasoning tokens are billed and slow the reply. Reasoning models do this internally, so explicit CoT matters most for standard models.",
+      code: {
+        lang: "python",
+        source:
+          "import re\n\nprompt = \"\"\"A shop sells pens at 3 euros each, or 4 for 10 euros.\nWhat is the cheapest way to buy exactly 10 pens?\n\nThink it through step by step inside <thinking> tags.\nThen give only the final answer inside <answer> tags.\"\"\"\n\ntext = call_llm(prompt)                           # your LLM call\nanswer = re.search(r\"<answer>(.*?)</answer>\", text, re.S).group(1).strip()\n# <thinking>: 2 packs of 4 = 20 euros for 8 pens, plus 2 single pens = 6 euros\nprint(answer)                                     # \"26 euros\"",
+      },
+      pitfalls: [
+        "The written reasoning is not guaranteed to be the real reason for the answer; don't treat it as an audit trail.",
+        "It adds output tokens: higher cost and slower replies on easy tasks where it does not help.",
+        "Parse only the final answer; never show raw reasoning to users unchecked.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/chain-of-thought",
+    },
+    demo: "ChainOfThoughtDemo",
     related: ["llm-10", "agents-03"],
     projects: ["build-llm"],
-    keywords: ["chain", "thought"],
+    keywords: ["chain of thought", "step by step", "reasoning", "cot", "thinking", "multi-step"],
   },
   {
     id: "llm-10",
@@ -226,9 +306,30 @@ const concepts: ConceptInput[] = [
     tier: "base",
     official:
       "Models trained to think at length before answering. Slower and pricier, better on hard tasks.",
-    related: ["llm-06", "llm-09"],
+    kid: "Some puzzles need a quick guess, others need you to sit and think. Reasoning models are computers that stop and think longer, so they are slower but much better at hard puzzles.",
+    realWorld: {
+      title: "The quick parrot and the careful owl",
+      text: "The library hires an owl to sit next to the parrot. The parrot answers instantly and is perfect for 'where is the toilet?'. The owl takes a minute, scribbles notes nobody sees and checks its own work, so it wins at tricky maths and planning questions. The owl also charges more per question, so the librarian sends only the hard ones its way.",
+    },
+    engineering: {
+      text: "Reasoning models (OpenAI's o-series, Claude with extended thinking, DeepSeek-R1, Gemini thinking models) are trained with reinforcement learning to produce a long internal chain of thought before they answer. They score far higher on maths, code and multi-step planning, but they generate many more output tokens, so they cost more and take longer, especially before the first visible word. You usually control the effort with a thinking budget or effort setting. Route easy requests to a standard model and only hard ones to a reasoning model.",
+      code: {
+        lang: "python",
+        source:
+          "from anthropic import Anthropic\n\nclient = Anthropic()\nreply = client.messages.create(\n    model=\"claude-sonnet-5-5\",                          # use your current model\n    max_tokens=16000,\n    thinking={\"type\": \"enabled\", \"budget_tokens\": 8000},  # room to think first\n    messages=[{\"role\": \"user\", \"content\": \"Plan a 3-city rail trip under 300 euros...\"}],\n)\nfor block in reply.content:\n    if block.type == \"text\":\n        print(block.text)                                # the final answer only\nprint(reply.usage.output_tokens)                         # thinking is billed as output",
+      },
+      pitfalls: [
+        "Thinking tokens are billed as output tokens: a short answer can still be expensive.",
+        "The wait before the first visible word is much longer; stream progress or run them as background jobs.",
+        "Very detailed step-by-step instructions can hurt; give the goal and constraints and let the model plan.",
+        "Thinking-budget parameter names differ by provider and change between versions; check the current docs.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/build-with-claude/extended-thinking",
+    },
+    demo: "ReasoningModelDemo",
+    related: ["llm-06", "llm-09", "system-design-01"],
     projects: ["build-llm"],
-    keywords: ["reasoning", "models"],
+    keywords: ["reasoning models", "extended thinking", "thinking budget", "o1", "slow", "hard tasks", "routing"],
   },
   {
     id: "llm-11",

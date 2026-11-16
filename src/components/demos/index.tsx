@@ -15,6 +15,11 @@ export const demos: Record<string, ComponentType> = {
   AttentionDemo: dynamic(() => import("./llm/AttentionDemo"), { loading: () => <DemoFallback />, ssr: false }),
   ContextWindowDemo: dynamic(() => import("./llm/ContextWindowDemo"), { loading: () => <DemoFallback />, ssr: false }),
   KvCacheDemo: dynamic(() => import("./llm/KvCacheDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  TemperatureDemo: dynamic(() => import("./llm/TemperatureDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  SystemPromptDemo: dynamic(() => import("./llm/SystemPromptDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  FewShotDemo: dynamic(() => import("./llm/FewShotDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  ChainOfThoughtDemo: dynamic(() => import("./llm/ChainOfThoughtDemo"), { loading: () => <DemoFallback />, ssr: false }),
+  ReasoningModelDemo: dynamic(() => import("./llm/ReasoningModelDemo"), { loading: () => <DemoFallback />, ssr: false }),
 };
 
 export const DEMO_KEYS = Object.keys(demos);
