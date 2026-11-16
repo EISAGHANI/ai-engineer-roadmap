@@ -38,17 +38,18 @@ function checks(steps: readonly string[]) {
 export default function TrajectoryDemo() {
   const [id, setId] = React.useState<Id>("bad");
   const p = PATHS[id];
-  const results = checks(p.steps);
+  const steps: readonly string[] = p.steps;
+  const results = checks(steps);
   const allOk = results.every((r) => r.ok);
 
   return (
     <DemoFrame title="Mark the working, not just the answer" hint='Both robots answer "Is the author of our class reader older than 60?" correctly.' onReset={() => setId("bad")}>
       <ChoiceChips label="Trajectory" options={(Object.keys(PATHS) as Id[]).map((k) => ({ id: k, label: PATHS[k].label }))} value={id} onChange={setId} />
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <Panel title={`steps (${p.steps.length})`}>
+        <Panel title={`steps (${steps.length})`}>
           <ol className="list-decimal space-y-0.5 pl-4 font-mono text-[10px]">
-            {p.steps.map((s, i) => (
-              <li key={i} style={{ color: s.startsWith("web_search") || p.steps.indexOf(s) !== i ? "var(--bad)" : undefined }}>
+            {steps.map((s, i) => (
+              <li key={i} style={{ color: s.startsWith("web_search") || steps.indexOf(s) !== i ? "var(--bad)" : undefined }}>
                 {s}
               </li>
             ))}
