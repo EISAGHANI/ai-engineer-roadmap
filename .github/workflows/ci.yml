@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SITE_URL: https://ai-engineer-roadmap.vercel.app
+      NEXT_PUBLIC_GITHUB_OWNER: EISAGHANI
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # No lockfile is committed yet. Once one exists, switch to `npm ci` and add `cache: npm` above.
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Unit tests (content schema, 160 concepts, links, demo registry)
+        run: npm run test
+
+      - name: Plain-language check for kid explanations
+        run: npm run check:kid
+
+      - name: Lint
+        run: npm run lint
+
+      # Build before typecheck: `next build` generates next-env.d.ts and route types.
+      - name: Build
+        run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Typecheck
+        run: npm run typecheck

@@ -1,0 +1,365 @@
+import type { ConceptInput } from "../schema";
+
+/** Area: llm. Official one-liners are verbatim from the AI Engineer Roadmap (LearnVora, Nov 2026). */
+const concepts: ConceptInput[] = [
+  {
+    id: "llm-01",
+    area: "llm",
+    number: 1,
+    slug: "tokenization",
+    name: "Tokenization",
+    tier: "base",
+    official:
+      "Text is cut into tokens (word pieces) before the model reads it. Limits and prices are counted in tokens.",
+    kid: "Before a computer reads your sentence, it cuts it into little pieces, like cutting a sandwich into bites. Longer sentences mean more bites, and more bites cost more.",
+    realWorld: {
+      title: "The parrot's note cards",
+      text: "Our well-read parrot cannot read a whole page at once. The librarian cuts every sentence into small note cards, one word or word-piece per card, and hands them over one by one. The library charges per card, so a long letter costs more than a short one, and the parrot's desk only has room for so many cards.",
+    },
+    engineering: {
+      text: "A tokenizer (usually BPE or SentencePiece) maps text to integer ids from a fixed vocabulary of 30k-200k entries. Common words are one token; rare words, code and non-English text split into several. Context limits, rate limits and prices are all counted in tokens, so the same prompt can cost more in one language than another. Always measure token counts with the provider's own tokenizer rather than estimating from characters.",
+      code: {
+        lang: "python",
+        source:
+          "import tiktoken\n\nenc = tiktoken.get_encoding(\"cl100k_base\")\ntext = \"Tokenization cuts text into word pieces.\"\nids = enc.encode(text)\nprint(len(ids), ids)              # 8 tokens, e.g. [3404, 2065, 15061, ...]\nprint([enc.decode([i]) for i in ids])  # ['Token', 'ization', ' cuts', ' text', ...]\n\n# Rule of thumb for English: ~4 characters or ~0.75 words per token.\n# Measure, don't guess: other languages and code use far more tokens.",
+      },
+      pitfalls: [
+        "A 'word' is not a token: 'Tokenization' is two tokens, an emoji can be three.",
+        "Non-English text often costs 2-4x more tokens for the same meaning.",
+        "Different models use different tokenizers; counts are not portable between providers.",
+      ],
+      docsUrl: "https://platform.openai.com/tokenizer",
+    },
+    demo: "TokenizerDemo",
+    related: ["llm-04", "llm-13"],
+    projects: ["build-llm"],
+    keywords: ["tokenization", "tokens", "word pieces", "bpe", "price", "count"],
+  },
+  {
+    id: "llm-02",
+    area: "llm",
+    number: 2,
+    slug: "transformer-architecture",
+    name: "Transformer Architecture",
+    tier: "base",
+    official:
+      "The network design behind GPT, Claude and Llama: stacked attention and feed-forward layers.",
+    kid: "A transformer is the recipe for building a smart word-guesser. It stacks the same two steps many times: look at all the words, then think about them.",
+    realWorld: {
+      title: "A tower of reading rooms",
+      text: "Imagine the parrot's brain as a tall tower. On every floor there are two rooms: in the first room the parrot looks at all the note cards and decides which ones matter to each other; in the second room it thinks about what it just noticed. The cards go up floor by floor, and at the top the parrot guesses the next word. GPT, Claude and Llama are all towers built from the same two rooms, just with different heights.",
+    },
+    engineering: {
+      text: "A decoder-only transformer is a stack of identical blocks, each with a multi-head self-attention layer followed by a position-wise feed-forward network, with residual connections and layer normalisation around both. Token embeddings plus positional information go in at the bottom; a final linear layer over the vocabulary produces next-token logits. Model size is mostly the number of blocks, the hidden width and the number of attention heads.",
+      code: {
+        lang: "python",
+        source:
+          "# One transformer block, in pseudo-PyTorch\nclass Block(nn.Module):\n    def __init__(self, d_model, n_heads):\n        self.ln1 = nn.LayerNorm(d_model)\n        self.attn = nn.MultiheadAttention(d_model, n_heads)\n        self.ln2 = nn.LayerNorm(d_model)\n        self.ffn = nn.Sequential(nn.Linear(d_model, 4 * d_model), nn.GELU(),\n                                 nn.Linear(4 * d_model, d_model))\n\n    def forward(self, x):\n        x = x + self.attn(self.ln1(x))   # room 1: look at the other tokens\n        x = x + self.ffn(self.ln2(x))    # room 2: think about what you saw\n        return x\n\n# A model = embeddings -> N x Block -> final norm -> vocab logits",
+      },
+      pitfalls: [
+        "Attention cost grows with the square of the sequence length; long prompts are expensive.",
+        "The architecture is the same across vendors; data, scale and training make the difference.",
+      ],
+      docsUrl: "https://arxiv.org/abs/1706.03762",
+    },
+    illustration: "TransformerStack",
+    related: ["llm-03"],
+    projects: ["build-llm"],
+    keywords: ["transformer", "architecture", "attention", "feed-forward", "layers", "gpt", "llama"],
+  },
+  {
+    id: "llm-03",
+    area: "llm",
+    number: 3,
+    slug: "self-attention",
+    name: "Self-Attention",
+    tier: "base",
+    official:
+      "Every token looks at the other tokens and decides which ones matter for its meaning.",
+    kid: "When you read \"the dog chased its ball\", you know \"its\" means the dog. The computer does the same: every word looks around at the other words to find out what it means.",
+    realWorld: {
+      title: "Friends at a table",
+      text: "Put all the note cards around a table. Each card can look at every other card and decide who its best friends are. The card \"its\" looks around and points at \"dog\". The card \"ball\" points at \"chased\". The parrot writes down these friendships for every card, and that is how it understands who did what in the sentence.",
+    },
+    engineering: {
+      text: "For each token the model computes a query, a key and a value vector. The attention weight between two tokens is the softmax of the scaled dot product of one token's query with the other's key; the output is the weighted sum of the values. Multiple heads learn different relationships in parallel (syntax, coreference, position). In a decoder a causal mask stops tokens from attending to later positions.",
+      code: {
+        lang: "python",
+        source:
+          "import torch, math\n\ndef attention(Q, K, V, mask=None):\n    # Q, K, V: (seq_len, d_k)\n    scores = Q @ K.T / math.sqrt(K.shape[-1])   # how much each token looks at each other\n    if mask is not None:\n        scores = scores.masked_fill(mask == 0, float(\"-inf\"))  # causal: no peeking ahead\n    weights = torch.softmax(scores, dim=-1)       # rows sum to 1\n    return weights @ V                            # mix the values by those weights\n\n# weights[i, j] = how much token i attends to token j",
+      },
+      pitfalls: [
+        "Attention is O(n^2) in sequence length for both compute and memory.",
+        "Attention weights are not a faithful explanation of model reasoning; treat visualisations as hints.",
+      ],
+      docsUrl: "https://jalammar.github.io/illustrated-transformer/",
+    },
+    demo: "AttentionDemo",
+    related: ["llm-02", "llm-05"],
+    projects: ["build-llm"],
+    keywords: ["self-attention", "attention", "query", "key", "value", "heads"],
+  },
+  {
+    id: "llm-04",
+    area: "llm",
+    number: 4,
+    slug: "context-windows",
+    name: "Context Windows",
+    tier: "base",
+    official:
+      "The most tokens (prompt + answer) a model can handle in one call.",
+    kid: "The computer has a desk with room for only so many note cards at once. Your question and its answer both have to fit on the desk, or the cards fall off.",
+    realWorld: {
+      title: "The parrot's desk",
+      text: "The parrot works at one desk, and the desk has a fixed size. The librarian lays out the question cards on one side; the parrot's answer cards go on the other side. If the question already fills most of the desk, there is little room left for the answer. A bigger desk (a bigger context window) costs more and the parrot takes longer to look over all the cards.",
+    },
+    engineering: {
+      text: "The context window is the maximum number of tokens a single request may hold: system prompt, conversation history, retrieved documents, tool results and the generated answer all count. Exceeding it fails the request or silently truncates history. Larger windows cost more per request and models often attend less reliably to content in the middle of very long inputs, so retrieval and summarisation usually beat stuffing everything in.",
+      code: {
+        lang: "python",
+        source:
+          "MAX_CONTEXT = 128_000          # model limit, in tokens\nRESERVE_FOR_ANSWER = 2_000\n\ndef fits(messages, count_tokens):\n    used = sum(count_tokens(m[\"content\"]) for m in messages)\n    return used + RESERVE_FOR_ANSWER <= MAX_CONTEXT\n\n# Typical strategy when it does not fit:\n# 1. drop or summarise the oldest turns\n# 2. retrieve only the relevant chunks instead of whole documents\n# 3. cap tool results (e.g. first 2k tokens of a web page)",
+      },
+      pitfalls: [
+        "The window is shared between input and output; a huge prompt leaves no room for the answer.",
+        "'Lost in the middle': facts placed mid-prompt are recalled worse than those at the start or end.",
+        "Filling the window every call is the fastest way to blow your budget.",
+      ],
+      docsUrl: "https://docs.claude.com/en/docs/build-with-claude/context-windows",
+    },
+    demo: "ContextWindowDemo",
+    related: ["llm-01", "system-design-19", "agents-18"],
+    projects: ["build-llm"],
+    keywords: ["context", "windows", "limit", "tokens", "prompt", "truncate"],
+  },
+  {
+    id: "llm-05",
+    area: "llm",
+    number: 5,
+    slug: "kv-cache",
+    name: "KV Cache",
+    tier: "base",
+    official:
+      "Saved keys and values of earlier tokens, so each new token doesn't redo the whole prompt.",
+    kid: "When you read a long story out loud, you don't go back to page one for every new word. The computer keeps notes about the words it already read, so it only has to think about the new one.",
+    realWorld: {
+      title: "The parrot's sticky notes",
+      text: "Our well-read parrot is answering a long question. Instead of re-reading the whole question each time it says a word, it sticks a small note on every word the first time it reads it. For the next word it just glances at the notes. More words mean more notes on the desk, which is why very long questions need a bigger desk.",
+    },
+    engineering: {
+      text: "During autoregressive decoding every new token attends to all previous tokens. Without a cache the model recomputes the key and value projections for the whole sequence at each step, which is quadratic work over a generation. The KV cache stores K and V per layer and per head for every processed token, so each step only computes the new token's Q, K, V and attends over the cached K/V. Memory grows linearly with sequence length and is usually the limit on batch size in serving.",
+      code: {
+        lang: "python",
+        source:
+          "# Hugging Face transformers: the cache is on by default\nout = model.generate(**inputs, max_new_tokens=50, use_cache=True)\n\n# Rough KV-cache size per token (bytes):\n# 2 (K and V) * layers * kv_heads * head_dim * bytes_per_value\n# Llama-3 8B, fp16: 2 * 32 * 8 * 128 * 2 = 131072 bytes = 128 KB per token\n# 8k tokens -> ~1 GB of GPU memory for ONE sequence\nkv_per_token = 2 * 32 * 8 * 128 * 2\nprint(kv_per_token * 8192 / 1e9, \"GB\")",
+      },
+      pitfalls: [
+        "Cache memory, not compute, is what caps how many users you can serve at once.",
+        "Changing anything at the start of the prompt invalidates the cached prefix.",
+        "Multi-turn chat re-sends history; without prefix caching you pay for it every turn.",
+      ],
+      docsUrl: "https://huggingface.co/docs/transformers/kv_cache",
+    },
+    demo: "KvCacheDemo",
+    related: ["llm-03", "llm-12", "system-design-11", "system-design-04"],
+    projects: ["build-llm", "build-system-design"],
+    keywords: ["cache", "keys and values", "decoding", "memory", "attention"],
+  },
+  {
+    id: "llm-06",
+    area: "llm",
+    number: 6,
+    slug: "temperature-and-top-p",
+    name: "Temperature and Top-p",
+    tier: "base",
+    official:
+      "Sampling knobs. Low values give predictable answers, high values give varied ones.",
+    related: ["llm-10"],
+    projects: ["build-llm"],
+    keywords: ["temperature", "and", "top-p"],
+  },
+  {
+    id: "llm-07",
+    area: "llm",
+    number: 7,
+    slug: "system-prompts",
+    name: "System Prompts",
+    tier: "base",
+    official:
+      "Standing instructions that set the model's role, rules and output style.",
+    related: ["llm-08", "security-01"],
+    projects: ["build-llm"],
+    keywords: ["system", "prompts"],
+  },
+  {
+    id: "llm-08",
+    area: "llm",
+    number: 8,
+    slug: "few-shot-prompting",
+    name: "Few-shot Prompting",
+    tier: "base",
+    official:
+      "Put 2-5 worked examples in the prompt so the model copies the pattern.",
+    related: ["llm-07"],
+    projects: ["build-llm"],
+    keywords: ["few-shot", "prompting"],
+  },
+  {
+    id: "llm-09",
+    area: "llm",
+    number: 9,
+    slug: "chain-of-thought",
+    name: "Chain of Thought",
+    tier: "base",
+    official:
+      "Ask the model to reason step by step before it answers. Helps on multi-step problems.",
+    related: ["llm-10", "agents-03"],
+    projects: ["build-llm"],
+    keywords: ["chain", "thought"],
+  },
+  {
+    id: "llm-10",
+    area: "llm",
+    number: 10,
+    slug: "reasoning-models",
+    name: "Reasoning Models",
+    tier: "base",
+    official:
+      "Models trained to think at length before answering. Slower and pricier, better on hard tasks.",
+    related: ["llm-06", "llm-09"],
+    projects: ["build-llm"],
+    keywords: ["reasoning", "models"],
+  },
+  {
+    id: "llm-11",
+    area: "llm",
+    number: 11,
+    slug: "structured-outputs",
+    name: "Structured Outputs",
+    tier: "production",
+    official:
+      "Force the reply into JSON that matches your schema, so your code can parse it every time.",
+    related: ["security-06", "backend-19"],
+    projects: ["build-llm"],
+    keywords: ["structured", "outputs"],
+  },
+  {
+    id: "llm-12",
+    area: "llm",
+    number: 12,
+    slug: "prompt-caching",
+    name: "Prompt Caching",
+    tier: "production",
+    official:
+      "Reuse an unchanged prompt prefix across calls to cut cost and latency.",
+    related: ["llm-05", "system-design-04"],
+    projects: ["build-llm"],
+    keywords: ["prompt", "caching"],
+  },
+  {
+    id: "llm-13",
+    area: "llm",
+    number: 13,
+    slug: "token-pricing",
+    name: "Token Pricing",
+    tier: "production",
+    official:
+      "Input, output and cached tokens cost different amounts. Know your cost per call.",
+    related: ["llm-01", "evals-19", "system-design-20"],
+    projects: ["build-llm"],
+    keywords: ["token", "pricing"],
+  },
+  {
+    id: "llm-14",
+    area: "llm",
+    number: 14,
+    slug: "hallucinations",
+    name: "Hallucinations",
+    tier: "production",
+    official:
+      "Confident but wrong answers. Reduce them with grounding, citations and permission to say 'I don't know'.",
+    related: ["rag-16", "evals-06"],
+    projects: ["build-llm"],
+    keywords: ["hallucinations"],
+  },
+  {
+    id: "llm-15",
+    area: "llm",
+    number: 15,
+    slug: "multimodal-inputs",
+    name: "Multimodal Inputs",
+    tier: "production",
+    official:
+      "Sending images, PDFs or audio to the model along with text.",
+    related: [],
+    projects: ["build-llm"],
+    keywords: ["multimodal", "inputs"],
+  },
+  {
+    id: "llm-16",
+    area: "llm",
+    number: 16,
+    slug: "fine-tuning-with-lora",
+    name: "Fine-tuning with LoRA",
+    tier: "production",
+    official:
+      "Train small adapter matrices instead of all the weights. A cheap way to specialise a model.",
+    related: ["llm-17", "llm-18", "llm-19"],
+    projects: ["build-llm"],
+    keywords: ["fine-tuning", "with", "lora"],
+  },
+  {
+    id: "llm-17",
+    area: "llm",
+    number: 17,
+    slug: "qlora",
+    name: "QLoRA",
+    tier: "production",
+    official:
+      "LoRA on top of a 4-bit quantized base model, so fine-tuning fits on one GPU.",
+    related: ["llm-16", "llm-18"],
+    projects: ["build-llm"],
+    keywords: ["qlora"],
+  },
+  {
+    id: "llm-18",
+    area: "llm",
+    number: 18,
+    slug: "quantization",
+    name: "Quantization",
+    tier: "production",
+    official:
+      "Store weights in fewer bits (8-bit, 4-bit) to save memory and run faster, at a small quality cost.",
+    related: ["llm-16", "llm-17", "deployment-11"],
+    projects: ["build-llm"],
+    keywords: ["quantization"],
+  },
+  {
+    id: "llm-19",
+    area: "llm",
+    number: 19,
+    slug: "distillation",
+    name: "Distillation",
+    tier: "production",
+    official:
+      "Train a small 'student' model to copy the answers of a big 'teacher' model.",
+    related: ["llm-16"],
+    projects: ["build-llm"],
+    keywords: ["distillation"],
+  },
+  {
+    id: "llm-20",
+    area: "llm",
+    number: 20,
+    slug: "open-vs-closed-models",
+    name: "Open vs Closed Models",
+    tier: "production",
+    official:
+      "Open weights you can host yourself (Llama, Qwen, Mistral) vs API-only models (GPT, Claude, Gemini).",
+    related: ["deployment-11", "system-design-13"],
+    projects: ["build-llm"],
+    keywords: ["open", "closed", "models"],
+  },
+];
+
+export default concepts;
