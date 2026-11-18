@@ -26,6 +26,21 @@ export const Resource = z.object({
 });
 export type Resource = z.infer<typeof Resource>;
 
+export const QuizQuestion = z.object({
+  prompt: z.string().min(1),
+  options: z.array(z.string().min(1)).length(4),
+  correctAnswer: z.number().int().min(0).max(3),
+  explanation: z.string().min(1),
+});
+export type QuizQuestion = z.infer<typeof QuizQuestion>;
+
+export const Quiz = z.object({
+  conceptId: z.string().regex(/^[a-z-]+-\d{2}$/),
+  questions: z.array(QuizQuestion).length(5),
+  retakes: z.array(z.array(QuizQuestion).length(5)).optional(),
+});
+export type Quiz = z.infer<typeof Quiz>;
+
 export const CodeSample = z.object({
   lang: z.string().min(1),
   source: z.string().min(1),

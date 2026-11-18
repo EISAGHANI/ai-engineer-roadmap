@@ -11,6 +11,8 @@ import { useProgress, useHydrated } from "@/lib/progress";
 import { DemoSlot, hasDemo } from "@/components/demos";
 import { illustrations } from "@/components/illustrations";
 import { areaVar, pad2 } from "@/lib/utils";
+import { getQuizForConcept } from "@/content";
+import { TopicQuiz } from "./TopicQuiz";
 import type { ConceptView } from "./types";
 
 type Layer = "kid" | "real" | "eng";
@@ -36,6 +38,7 @@ export function ConceptBody({ view, onOpenProject, showNav }: ConceptBodyProps) 
   const color = areaVar(c.area);
   const [layer, setLayer] = React.useState<Layer>("kid");
   const idPrefix = `concept-${c.id}`;
+  const quiz = getQuizForConcept(c.id);
 
   React.useEffect(() => {
     if (simple && layer === "eng") setLayer("kid");
@@ -147,6 +150,8 @@ export function ConceptBody({ view, onOpenProject, showNav }: ConceptBodyProps) 
           </div>
         )}
       </section>
+
+      {quiz && <TopicQuiz key={c.id} quiz={quiz} color={color} />}
 
       {projects.length > 0 && (
         <section className="mt-6" aria-label="Where you will build it">
