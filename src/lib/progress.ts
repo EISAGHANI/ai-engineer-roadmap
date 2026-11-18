@@ -17,21 +17,69 @@ export interface ProgressState {
   importJson: (json: string) => { ok: boolean; count: number };
 }
 
+function syncToServer(method: "PATCH" | "PUT" | "DELETE", body?: unknown) {
+  if (typeof window === "undefined" || typeof fetch !== "function") return;
+  void fetch("/api/progress", {
+    method,
+    headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  }).catch(() => {
+    // Keep local progress intact if offline or API is unreachable.
+  });
+}
+
+export async function syncProgressWithServer(): Promise<void> {
+  if (typeof window === "undefined" || typeof fetch !== "function") return;
+  try {
+    const res = await fetch("/api/progress", { cache: "no-store" });
+    if (!res.ok) return;
+    const remote = (await res.json()) as {
+      used?: Record<string, string>;
+      prereqs?: Record<string, boolean>;
+    };
+    const remoteUsed = remote.used ?? {};
+    const remotePrereqs = remote.prereqs ?? {};
+    const hasRemote = Object.keys(remoteUsed).length > 0 || Object.keys(remotePrereqs).length > 0;
+
+    if (hasRemote) {
+      useProgress.setState({ used: remoteUsed, prereqs: remotePrereqs });
+    } else {
+      const local = useProgress.getState();
+      const hasLocal = Object.keys(local.used).length > 0 || Object.keys(local.prereqs).length > 0;
+      if (hasLocal) {
+        syncToServer("PUT", { used: local.used, prereqs: local.prereqs });
+      }
+    }
+  } catch {
+    // Keep local progress intact if offline or API is unreachable.
+  }
+}
+
 export const useProgress = create<ProgressState>()(
   persist(
     (set, get) => ({
       used: {},
       prereqs: {},
       toggleUsed: (id) => get().setUsed(id, !get().used[id]),
-      setUsed: (id, value) =>
+      setUsed: (id, value) => {
+        const usedAt = value ? new Date().toISOString() : undefined;
         set((s) => {
           const used = { ...s.used };
-          if (value) used[id] = new Date().toISOString();
+          if (usedAt) used[id] = usedAt;
           else delete used[id];
           return { used };
-        }),
-      togglePrereq: (id) => set((s) => ({ prereqs: { ...s.prereqs, [id]: !s.prereqs[id] } })),
-      reset: () => set({ used: {}, prereqs: {} }),
+        });
+        syncToServer("PATCH", { type: "concept", id, value, usedAt });
+      },
+      togglePrereq: (id) => {
+        const nextValue = !get().prereqs[id];
+        set((s) => ({ prereqs: { ...s.prereqs, [id]: nextValue } }));
+        syncToServer("PATCH", { type: "prereq", id, value: nextValue });
+      },
+      reset: () => {
+        set({ used: {}, prereqs: {} });
+        syncToServer("DELETE");
+      },
       exportJson: () =>
         JSON.stringify(
           { version: 1, exportedAt: new Date().toISOString(), used: get().used, prereqs: get().prereqs },
@@ -54,6 +102,7 @@ export const useProgress = create<ProgressState>()(
             }
           }
           set({ used, prereqs });
+          syncToServer("PUT", { used, prereqs });
           return { ok: true, count: Object.keys(used).length };
         } catch {
           return { ok: false, count: 0 };

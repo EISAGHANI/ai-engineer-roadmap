@@ -56,7 +56,7 @@ export function ProgressView({ areas, prerequisites }: ProgressViewProps) {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="text-4xl font-semibold sm:text-5xl">My progress</h1>
       <p className="prose-max mt-3 text-muted">
-        Stored in this browser only. Export a JSON backup before clearing your browser data or switching devices.
+        Synced with your Neon Postgres database and cached locally in this browser. You can also export a JSON backup anytime.
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
