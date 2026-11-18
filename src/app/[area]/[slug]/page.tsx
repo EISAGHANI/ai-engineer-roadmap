@@ -6,6 +6,7 @@ import { ConceptBody } from "@/components/roadmap/ConceptBody";
 import { concepts, getArea, getConceptBySlug } from "@/content";
 import { buildConceptView } from "@/lib/views";
 import { areaVar, pad2 } from "@/lib/utils";
+import { getQuizFromDb } from "@/lib/db";
 
 export const dynamicParams = false;
 
@@ -35,6 +36,7 @@ export default async function ConceptPage({ params }: { params: Promise<{ area: 
   if (!c) notFound();
   const a = getArea(c.area);
   const view = await buildConceptView(c, true);
+  const quiz = await getQuizFromDb(c.id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -45,7 +47,7 @@ export default async function ConceptPage({ params }: { params: Promise<{ area: 
         </span>
       </Link>
       <div className="mt-4 rounded-card border border-border bg-surface p-5 sm:p-8" style={{ borderTopColor: areaVar(c.area), borderTopWidth: 4 }}>
-        <ConceptBody view={view} showNav />
+        <ConceptBody view={view} quiz={quiz} showNav />
       </div>
     </div>
   );

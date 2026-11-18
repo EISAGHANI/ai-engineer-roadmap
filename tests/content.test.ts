@@ -7,8 +7,8 @@ import {
   getConcept,
   getProject,
   areasInLearningOrder,
-  getQuizForConcept,
 } from "@/content";
+import { buildQuizFromRows } from "@/lib/db";
 import { AREA_IDS } from "@/content/schema";
 
 describe("roadmap content", () => {
@@ -111,39 +111,35 @@ describe("roadmap content", () => {
     }
   });
 
-  it("provides exactly five questions for every Phase 0 backend topic", () => {
-    for (let number = 1; number <= 10; number += 1) {
-      const conceptId = `backend-${String(number).padStart(2, "0")}`;
-      const quiz = getQuizForConcept(conceptId);
-      expect(quiz, conceptId).toBeDefined();
-      expect(quiz?.questions, conceptId).toHaveLength(5);
-      expect(quiz?.retakes, `${conceptId} retakes`).toHaveLength(2);
-      for (const set of [quiz?.questions ?? [], ...(quiz?.retakes ?? [])]) {
-        expect(set).toHaveLength(5);
-        for (const question of set) {
-          expect(question.options).toHaveLength(4);
-          expect(question.correctAnswer).toBeGreaterThanOrEqual(0);
-          expect(question.correctAnswer).toBeLessThan(4);
-          expect(question.explanation.trim().length).toBeGreaterThan(10);
-        }
-      }
-      const retakes = quiz?.retakes ?? [];
-      expect(JSON.stringify(retakes[0])).not.toBe(JSON.stringify(quiz?.questions));
-      expect(JSON.stringify(retakes[1])).not.toBe(JSON.stringify(retakes[0]));
+  it("builds a three-set quiz from database rows", () => {
+    const rows = Array.from({ length: 3 }, (_, setIndex) =>
+      Array.from({ length: 5 }, (_, questionIndex) => ({
+        set_index: setIndex,
+        question_index: questionIndex,
+        prompt: `Set ${setIndex + 1}, question ${questionIndex + 1}`,
+        options: ["Correct", "Wrong 1", "Wrong 2", "Wrong 3"],
+        correct_answer: 0,
+        explanation: "The correct choice explains the concept.",
+      })),
+    ).flat();
 
-      const normalize = (prompt: string) =>
-        prompt.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-      const promptsBySet = [
-        quiz?.questions ?? [],
-        ...retakes,
-      ].map((set) => new Set(set.map((question) => normalize(question.prompt))));
-      for (let first = 0; first < promptsBySet.length; first += 1) {
-        for (let second = first + 1; second < promptsBySet.length; second += 1) {
-          for (const prompt of promptsBySet[first]) {
-            expect(promptsBySet[second].has(prompt), `${conceptId} has repeated prompt "${prompt}"`).toBe(false);
-          }
-        }
-      }
-    }
+    const quiz = buildQuizFromRows("llm-01", rows);
+    expect(quiz?.questions).toHaveLength(5);
+    expect(quiz?.retakes).toHaveLength(2);
+    expect(quiz?.retakes?.[0]).toHaveLength(5);
+    expect(quiz?.retakes?.[1]).toHaveLength(5);
+    expect(new Set(rows.map((row) => row.prompt)).size).toBe(15);
+  });
+
+  it("returns no quiz for incomplete database rows", () => {
+    const rows = Array.from({ length: 4 }, (_, questionIndex) => ({
+      set_index: 0,
+      question_index: questionIndex,
+      prompt: `Question ${questionIndex + 1}`,
+      options: ["A", "B", "C", "D"],
+      correct_answer: 0,
+      explanation: "A complete explanation.",
+    }));
+    expect(buildQuizFromRows("llm-01", rows)).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Area, Concept, Phase, Project, Quiz, type AreaId } from "./schema";
+import { Area, Concept, Phase, Project, type AreaId } from "./schema";
 import areasRaw from "./areas";
 import phasesRaw, { prerequisites, rules } from "./phases";
 import projectsRaw from "./projects";
@@ -11,8 +11,6 @@ import systemDesign from "./concepts/system-design";
 import security from "./concepts/security";
 import deployment from "./concepts/deployment";
 import backend from "./concepts/backend";
-import quizRetakesRaw from "./quiz-retakes";
-import quizzesRaw from "./quizzes";
 
 function parseAll<T extends z.ZodTypeAny>(schema: T, items: unknown[], label: string): z.infer<T>[] {
   return items.map((item, i) => {
@@ -28,10 +26,6 @@ function parseAll<T extends z.ZodTypeAny>(schema: T, items: unknown[], label: st
 export const areas = parseAll(Area, areasRaw, "area");
 export const phases = parseAll(Phase, phasesRaw, "phase");
 export const projects = parseAll(Project, projectsRaw, "project");
-export const quizzes = parseAll(Quiz, quizzesRaw, "quiz").map((quiz) => {
-  const pack = quizRetakesRaw.find((entry) => entry.conceptId === quiz.conceptId);
-  return { ...quiz, retakes: pack?.retakes ?? [] };
-});
 export const concepts = parseAll(
   Concept,
   [...llm, ...rag, ...agents, ...evals, ...systemDesign, ...security, ...deployment, ...backend],
@@ -81,10 +75,6 @@ export function getProjectsForConcept(conceptId: string) {
 
 export function getProjectsForArea(areaId: AreaId) {
   return projects.filter((p) => p.area === areaId);
-}
-
-export function getQuizForConcept(conceptId: string) {
-  return quizzes.find((quiz) => quiz.conceptId === conceptId);
 }
 
 export function conceptHref(c: { area: string; slug: string }) {

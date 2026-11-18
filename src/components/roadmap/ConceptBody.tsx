@@ -11,14 +11,15 @@ import { useProgress, useHydrated } from "@/lib/progress";
 import { DemoSlot, hasDemo } from "@/components/demos";
 import { illustrations } from "@/components/illustrations";
 import { areaVar, pad2 } from "@/lib/utils";
-import { getQuizForConcept } from "@/content";
 import { TopicQuiz } from "./TopicQuiz";
 import type { ConceptView } from "./types";
+import type { Quiz } from "@/content/schema";
 
 type Layer = "kid" | "real" | "eng";
 
 interface ConceptBodyProps {
   view: ConceptView;
+  quiz?: Quiz | null;
   /** Called when a project chip is clicked (opens the project modal in place). */
   onOpenProject?: (projectId: string) => void;
   showNav?: boolean;
@@ -28,7 +29,7 @@ interface ConceptBodyProps {
  * The full content of a concept: official line, three explanation layers,
  * demo, projects, related. Used inside the expanded card and on the concept page.
  */
-export function ConceptBody({ view, onOpenProject, showNav }: ConceptBodyProps) {
+export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyProps) {
   const { concept: c, codeHtml, related, projects, prev, next } = view;
   const simple = useSettings((s) => s.simpleMode);
   const used = useProgress((s) => s.used);
@@ -38,7 +39,6 @@ export function ConceptBody({ view, onOpenProject, showNav }: ConceptBodyProps) 
   const color = areaVar(c.area);
   const [layer, setLayer] = React.useState<Layer>("kid");
   const idPrefix = `concept-${c.id}`;
-  const quiz = getQuizForConcept(c.id);
 
   React.useEffect(() => {
     if (simple && layer === "eng") setLayer("kid");
