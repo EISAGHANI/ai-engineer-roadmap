@@ -3,11 +3,12 @@
 import { useEffect } from "react";
 import { useSettings } from "@/lib/settings";
 import { syncProgressWithServer, useProgress } from "@/lib/progress";
+import { useAuth } from "@/lib/auth-client";
 
 /**
  * 1. Loads the persisted settings and progress from localStorage after mount
  *    (both stores use skipHydration, so the server HTML and the first client render match).
- * 2. Syncs progress with Neon Postgres via /api/progress.
+ * 2. Loads the signed-in user session and syncs progress with Neon Postgres via /api/progress.
  * 3. Mirrors settings onto <html> data attributes so CSS can react to them.
  */
 export function SettingsEffect() {
@@ -17,8 +18,11 @@ export function SettingsEffect() {
 
   useEffect(() => {
     void useSettings.persist.rehydrate();
-    void Promise.resolve(useProgress.persist.rehydrate()).then(() => {
-      void syncProgressWithServer();
+    void Promise.resolve(useProgress.persist.rehydrate()).then(async () => {
+      const user = await useAuth.getState().fetchMe();
+      if (user) {
+        await syncProgressWithServer();
+      }
     });
   }, []);
 

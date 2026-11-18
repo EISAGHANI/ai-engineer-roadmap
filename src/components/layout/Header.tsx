@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Sun, Moon, Sparkles, Menu, X, Accessibility } from "lucide-react";
+import { Search, Sun, Moon, Sparkles, Menu, X, Accessibility, User } from "lucide-react";
 import { useSettings } from "@/lib/settings";
 import { useProgress, useHydrated, countUsed } from "@/lib/progress";
+import { useAuth } from "@/lib/auth-client";
 import dynamic from "next/dynamic";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import type { SearchItem } from "@/lib/search";
@@ -41,6 +42,7 @@ export function Header({ areas, searchItems, totalConcepts }: HeaderProps) {
   const reduce = useSettings((s) => s.reduceMotion);
   const setReduce = useSettings((s) => s.setReduceMotion);
   const used = useProgress((s) => s.used);
+  const user = useAuth((s) => s.user);
   const hydrated = useHydrated();
   const done = hydrated ? countUsed(used) : 0;
   const areaNames = React.useMemo(
@@ -160,6 +162,21 @@ export function Header({ areas, searchItems, totalConcepts }: HeaderProps) {
           >
             {theme === "dark" ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
           </button>
+          <Link
+            href="/progress#account"
+            className="hidden h-9 items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 text-xs font-medium text-muted hover:text-text sm:flex"
+            title={user ? `Signed in as ${user.email}` : "Sign in or create an account to save progress"}
+          >
+            <User className="h-3.5 w-3.5" aria-hidden="true" />
+            {user ? (
+              <>
+                <span className="max-w-24 truncate text-text">{user.name}</span>
+                <span className="h-2 w-2 rounded-full bg-ok" aria-hidden="true" />
+              </>
+            ) : (
+              <span>Sign in</span>
+            )}
+          </Link>
           <Link href="/progress" className="ml-1" aria-label={`Progress: ${done} of ${totalConcepts} concepts used`}>
             <ProgressRing value={done / totalConcepts} size={36} stroke={4} label={`${done} of ${totalConcepts}`}>
               {done}

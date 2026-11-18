@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Download, Upload, Trash2, Flame } from "lucide-react";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { Button } from "@/components/ui/Button";
+import { AccountCard } from "@/components/auth/AccountCard";
 import { useProgress, useHydrated, countUsed, streakDays } from "@/lib/progress";
 import { areaVar, pad2, cn } from "@/lib/utils";
 import type { Prerequisite } from "@/content/schema";
@@ -58,6 +59,8 @@ export function ProgressView({ areas, prerequisites }: ProgressViewProps) {
       <p className="prose-max mt-3 text-muted">
         Synced with your Neon Postgres database and cached locally in this browser. You can also export a JSON backup anytime.
       </p>
+
+      <AccountCard />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Stat label="Concepts used" value={`${total} / 160`} />

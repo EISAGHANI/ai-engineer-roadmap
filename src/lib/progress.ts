@@ -36,7 +36,10 @@ export async function syncProgressWithServer(): Promise<void> {
     const remote = (await res.json()) as {
       used?: Record<string, string>;
       prereqs?: Record<string, boolean>;
+      authenticated?: boolean;
     };
+    if (!remote.authenticated) return;
+
     const remoteUsed = remote.used ?? {};
     const remotePrereqs = remote.prereqs ?? {};
     const hasRemote = Object.keys(remoteUsed).length > 0 || Object.keys(remotePrereqs).length > 0;

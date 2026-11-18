@@ -44,6 +44,23 @@ export async function ensureProgressTables(): Promise<void> {
           PRIMARY KEY (profile_id, prereq_id)
         )
       `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          email TEXT UNIQUE NOT NULL,
+          name TEXT NOT NULL,
+          password_hash TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS sessions (
+          token_hash TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          expires_at TIMESTAMPTZ NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -160,6 +177,37 @@ export async function replaceProgressInDb(profileId: string, snapshot: ProgressS
       FROM UNNEST(${conceptIds}::text[], ${usedAts}::text[]) AS t(c_id, u_at)
       ON CONFLICT (profile_id, concept_id)
       DO UPDATE SET used_at = EXCLUDED.used_at
+    `;
+  }
+
+  const prereqIds = Object.entries(snapshot.prereqs)
+    .filter(([, done]) => Boolean(done))
+    .map(([id]) => id);
+  if (prereqIds.length > 0) {
+    await sql`
+      INSERT INTO prereq_progress (profile_id, prereq_id, completed, updated_at)
+      SELECT ${profileId}, p_id, TRUE, NOW()
+      FROM UNNEST(${prereqIds}::text[]) AS t(p_id)
+      ON CONFLICT (profile_id, prereq_id)
+      DO UPDATE SET completed = TRUE, updated_at = NOW()
+    `;
+  }
+}
+
+export async function mergeProgressInDb(profileId: string, snapshot: ProgressSnapshot): Promise<void> {
+  await ensureProgressTables();
+  const sql = getSql();
+
+  const conceptEntries = Object.entries(snapshot.used);
+  if (conceptEntries.length > 0) {
+    const conceptIds = conceptEntries.map(([id]) => id);
+    const usedAts = conceptEntries.map(([, ts]) => ts);
+    await sql`
+      INSERT INTO concept_progress (profile_id, concept_id, used_at)
+      SELECT ${profileId}, c_id, u_at::timestamptz
+      FROM UNNEST(${conceptIds}::text[], ${usedAts}::text[]) AS t(c_id, u_at)
+      ON CONFLICT (profile_id, concept_id)
+      DO NOTHING
     `;
   }
 

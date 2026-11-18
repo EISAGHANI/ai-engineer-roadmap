@@ -51,4 +51,23 @@ await sql`
   )
 `;
 
-console.log("Migration complete: concept_progress and prereq_progress tables are ready.");
+await sql`
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )
+`;
+
+await sql`
+  CREATE TABLE IF NOT EXISTS sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )
+`;
+
+console.log("Migration complete: concept_progress, prereq_progress, users, and sessions tables are ready.");

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getSessionUser } from "@/lib/auth";
 import {
   clearProgressInDb,
   getProgressFromDb,
@@ -9,9 +10,6 @@ import {
 } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
-
-const PROFILE_COOKIE = "roadmap-profile";
-const DEFAULT_PROFILE = "default";
 
 const patchSchema = z.discriminatedUnion("type", [
   z.object({
@@ -28,22 +26,42 @@ const patchSchema = z.discriminatedUnion("type", [
 ]);
 
 const putSchema = z.object({
-  used: z.record(z.string().min(1).max(200), z.string().datetime()),
+  used: z.record(z.string().min(1).max(200), z.string()),
   prereqs: z.record(z.string().min(1).max(200), z.boolean()),
 });
 
-function getProfileId(req: NextRequest): string {
-  const fromQuery = req.nextUrl.searchParams.get("profile");
-  const fromCookie = req.cookies.get(PROFILE_COOKIE)?.value;
-  const raw = (fromQuery || fromCookie || DEFAULT_PROFILE).trim();
-  return /^[a-zA-Z0-9_-]{1,64}$/.test(raw) ? raw : DEFAULT_PROFILE;
+async function resolveProfileId(req: NextRequest): Promise<string | null> {
+  const user = await getSessionUser(req);
+  if (user) return user.id;
+
+  const fromQuery = req.nextUrl.searchParams.get("profile")?.trim();
+  if (fromQuery && /^[a-zA-Z0-9_-]{1,64}$/.test(fromQuery)) {
+    return fromQuery;
+  }
+
+  return null;
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const profileId = getProfileId(req);
+    const profileId = await resolveProfileId(req);
+    if (!profileId) {
+      return NextResponse.json({
+        used: {},
+        prereqs: {},
+        profileId: null,
+        authenticated: false,
+        synced: false,
+      });
+    }
+
     const snapshot = await getProgressFromDb(profileId);
-    return NextResponse.json({ ...snapshot, profileId, synced: true });
+    return NextResponse.json({
+      ...snapshot,
+      profileId,
+      authenticated: true,
+      synced: true,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load progress";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -52,13 +70,17 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const profileId = await resolveProfileId(req);
+    if (!profileId) {
+      return NextResponse.json({ ok: false, synced: false, reason: "unauthenticated" }, { status: 200 });
+    }
+
     const body = await req.json();
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 400 });
     }
 
-    const profileId = getProfileId(req);
     const data = parsed.data;
     if (data.type === "concept") {
       await setConceptUsedInDb(profileId, data.id, data.value, data.usedAt);
@@ -66,7 +88,7 @@ export async function PATCH(req: NextRequest) {
       await setPrereqInDb(profileId, data.id, data.value);
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, synced: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update progress";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -75,15 +97,19 @@ export async function PATCH(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const profileId = await resolveProfileId(req);
+    if (!profileId) {
+      return NextResponse.json({ ok: false, synced: false, reason: "unauthenticated" }, { status: 200 });
+    }
+
     const body = await req.json();
     const parsed = putSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid payload", issues: parsed.error.issues }, { status: 400 });
     }
 
-    const profileId = getProfileId(req);
     await replaceProgressInDb(profileId, parsed.data);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, synced: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to replace progress";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -92,9 +118,13 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const profileId = getProfileId(req);
+    const profileId = await resolveProfileId(req);
+    if (!profileId) {
+      return NextResponse.json({ ok: false, synced: false, reason: "unauthenticated" }, { status: 200 });
+    }
+
     await clearProgressInDb(profileId);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, synced: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to reset progress";
     return NextResponse.json({ error: message }, { status: 500 });
