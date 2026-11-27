@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { transitions, useMotionSafe } from "@/lib/motion";
+import { useT } from "@/i18n/client";
 
 interface ModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ const FOCUSABLE =
 
 /** Accessible modal: focus trap, Esc to close, scroll lock, click on backdrop closes. */
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
+  const t = useT();
   const panelRef = React.useRef<HTMLDivElement>(null);
   const lastActive = React.useRef<Element | null>(null);
   const motionSafe = useMotionSafe();
@@ -100,7 +102,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={t.ui.close}
                 className="rounded-full p-2 text-muted hover:bg-surface-2 hover:text-text"
               >
                 <X className="h-5 w-5" aria-hidden="true" />

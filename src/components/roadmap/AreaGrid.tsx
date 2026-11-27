@@ -5,6 +5,7 @@ import { useSettings } from "@/lib/settings";
 import { stagger } from "@/lib/motion";
 import { AreaCard, type AreaCardData } from "./AreaCard";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/client";
 
 interface AreaGridProps {
   learningOrder: AreaCardData[];
@@ -12,6 +13,7 @@ interface AreaGridProps {
 }
 
 export function AreaGrid({ learningOrder, pdfOrder }: AreaGridProps) {
+  const t = useT();
   const order = useSettings((s) => s.areaOrder);
   const setOrder = useSettings((s) => s.setAreaOrder);
   const list = order === "learning" ? learningOrder : pdfOrder;
@@ -20,13 +22,13 @@ export function AreaGrid({ learningOrder, pdfOrder }: AreaGridProps) {
     <section aria-labelledby="areas-heading">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 id="areas-heading" className="text-2xl font-semibold">
-          The 8 areas
+          {t.areaGrid.title}
         </h2>
-        <div role="group" aria-label="Area order" className="flex rounded-full bg-surface-2 p-1 text-sm">
+        <div role="group" aria-label={t.areaGrid.orderAria} className="flex rounded-full bg-surface-2 p-1 text-sm">
           {(
             [
-              ["learning", "Learning order"],
-              ["pdf", "Roadmap order"],
+              ["learning", t.areaGrid.learning],
+              ["pdf", t.areaGrid.pdf],
             ] as const
           ).map(([key, label]) => (
             <button

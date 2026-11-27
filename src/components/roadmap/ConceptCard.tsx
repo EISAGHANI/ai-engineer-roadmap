@@ -11,6 +11,7 @@ import { fadeUp, transitions, useMotionSafe } from "@/lib/motion";
 import { areaVar, pad2, cn } from "@/lib/utils";
 import { ConceptBody } from "./ConceptBody";
 import type { ConceptView } from "./types";
+import { useLocalePath, useT } from "@/i18n/client";
 
 interface ConceptCardProps {
   view: ConceptView;
@@ -23,6 +24,8 @@ interface ConceptCardProps {
 /** Collapsed: one row that fits a phone screen. Expanded: the full ConceptBody opens in place. */
 export function ConceptCard({ view, expanded, onToggle, onOpenProject, animate }: ConceptCardProps) {
   const c = view.concept;
+  const t = useT();
+  const lp = useLocalePath();
   const used = useProgress((s) => s.used);
   const setUsed = useProgress((s) => s.setUsed);
   const hydrated = useHydrated();
@@ -52,7 +55,7 @@ export function ConceptCard({ view, expanded, onToggle, onOpenProject, animate }
       style={{ borderLeftColor: color, borderLeftWidth: 4 }}
     >
       <div className="flex items-center gap-3 p-3 sm:p-4">
-        <Checkbox checked={isUsed} onChange={(v) => setUsed(c.id, v)} label={`I used ${c.name} in code`} color={color} size="sm" />
+        <Checkbox checked={isUsed} onChange={(v) => setUsed(c.id, v)} label={t.concept.usedLabel(c.name)} color={color} size="sm" />
         <button
           type="button"
           onClick={onToggle}
@@ -65,11 +68,11 @@ export function ConceptCard({ view, expanded, onToggle, onOpenProject, animate }
           </span>
           <span className="min-w-0 flex-1">
             <span className={cn("block font-medium", isUsed && "line-through decoration-muted/60")}>{c.name}</span>
-            <span className="block truncate text-sm text-muted">{c.official}</span>
+            <span className="block truncate text-sm text-muted">{c.officialTranslation ?? c.official}</span>
           </span>
           {c.demo && (
             <Badge color={color} className="hidden sm:inline-flex">
-              try it
+              {t.concept.tryBadge}
             </Badge>
           )}
           <ChevronDown
@@ -78,10 +81,10 @@ export function ConceptCard({ view, expanded, onToggle, onOpenProject, animate }
           />
         </button>
         <Link
-          href={`/${c.area}/${c.slug}`}
+          href={lp(`/${c.area}/${c.slug}`)}
           className="hidden shrink-0 rounded-full p-2 text-muted hover:bg-surface-2 hover:text-text sm:inline-flex"
-          aria-label={`Open ${c.name} on its own page`}
-          title="Open on its own page"
+          aria-label={t.concept.openPage(c.name)}
+          title={t.concept.openPageTitle}
         >
           <Link2 className="h-4 w-4" aria-hidden="true" />
         </Link>

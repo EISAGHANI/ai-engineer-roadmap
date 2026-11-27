@@ -6,20 +6,17 @@ import { ProjectCard } from "./ProjectCard";
 import { ProjectModal } from "./ProjectModal";
 import { cn, areaVar } from "@/lib/utils";
 import type { ProjectView } from "./types";
+import { useT } from "@/i18n/client";
 
 interface ProjectsViewProps {
   views: ProjectView[];
   areaOptions: Array<{ id: string; name: string }>;
 }
 
-const KINDS = [
-  ["all", "All"],
-  ["build-this", "Build this"],
-  ["portfolio", "Portfolio"],
-  ["author", "Own projects"],
-] as const;
+const KINDS = ["all", "build-this", "portfolio", "author"] as const;
 
 export function ProjectsView({ views, areaOptions }: ProjectsViewProps) {
+  const t = useT();
   const [projectId, setProjectId] = useUrlParam("project");
   const [kind, setKind] = React.useState<string>("all");
   const [area, setArea] = React.useState<string>("all");
@@ -34,16 +31,15 @@ export function ProjectsView({ views, areaOptions }: ProjectsViewProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <p className="font-mono text-xs tracking-wide text-accent uppercase">Build after every area</p>
-      <h1 className="mt-2 text-4xl font-semibold sm:text-5xl">Projects</h1>
+      <p className="font-mono text-xs tracking-wide text-accent uppercase">{t.projects.eyebrow}</p>
+      <h1 className="mt-2 text-4xl font-semibold sm:text-5xl">{t.projects.title}</h1>
       <p className="prose-max mt-3 text-lg text-muted">
-        Six small shipped projects beat sixty tutorials. Each project lives in its own GitHub repository; this page
-        shows what it proves and pulls its stars and last push live from GitHub.
+        {t.projects.lead}
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="Project kind" className="flex rounded-full bg-surface-2 p-1 text-sm">
-          {KINDS.map(([k, label]) => (
+        <div role="group" aria-label={t.projects.kindAria} className="flex rounded-full bg-surface-2 p-1 text-sm">
+          {KINDS.map((k) => (
             <button
               key={k}
               type="button"
@@ -51,18 +47,18 @@ export function ProjectsView({ views, areaOptions }: ProjectsViewProps) {
               onClick={() => setKind(k)}
               className={cn("rounded-full px-3 py-1.5", kind === k ? "bg-surface text-text shadow-sm" : "text-muted hover:text-text")}
             >
-              {label}
+              {t.projects.kinds[k]}
             </button>
           ))}
         </div>
         <label className="ml-auto flex items-center gap-2 text-sm text-muted">
-          Area
+          {t.projects.area}
           <select
             value={area}
             onChange={(e) => setArea(e.target.value)}
             className="rounded-full border border-border bg-surface-2 px-3 py-1.5 text-sm text-text"
           >
-            <option value="all">All areas</option>
+            <option value="all">{t.projects.allAreas}</option>
             {areaOptions.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -78,7 +74,7 @@ export function ProjectsView({ views, areaOptions }: ProjectsViewProps) {
             <ProjectCard view={v} onOpen={() => open(v.project.id)} />
           </div>
         ))}
-        {list.length === 0 && <p className="text-muted">No projects match this filter.</p>}
+        {list.length === 0 && <p className="text-muted">{t.projects.none}</p>}
       </div>
 
       <ProjectModal view={current} onClose={close} />

@@ -6,6 +6,8 @@ import { motion } from "motion/react";
 import { areaVar } from "@/lib/utils";
 import { useMotionSafe } from "@/lib/motion";
 import { HOURS_PER_WEEK_DEFAULT, TOTAL_WEEKS } from "@/content/phases";
+import { useLocale, useLocalePath, useT } from "@/i18n/client";
+import { LOCALE_TAGS } from "@/i18n/config";
 
 export interface TimelinePhase {
   number: number;
@@ -23,6 +25,9 @@ function parseWeeks(w: string): [number, number] {
 /** SVG timeline of the 8 phases over 26 weeks, with a finish-date calculator. */
 export function PhaseTimeline({ phases }: { phases: TimelinePhase[] }) {
   const motionSafe = useMotionSafe();
+  const t = useT();
+  const lp = useLocalePath();
+  const locale = useLocale();
   const [hours, setHours] = React.useState(HOURS_PER_WEEK_DEFAULT);
   const scale = HOURS_PER_WEEK_DEFAULT / hours; // more hours -> fewer calendar weeks
   const weeksNeeded = Math.max(8, Math.round(TOTAL_WEEKS * scale));
@@ -40,7 +45,7 @@ export function PhaseTimeline({ phases }: { phases: TimelinePhase[] }) {
     <div>
       <div className="mb-4 flex flex-wrap items-end gap-4">
         <label className="flex flex-col text-sm">
-          <span className="text-muted">Hours per week: {hours}</span>
+          <span className="text-muted">{t.timeline.hoursPerWeek(hours)}</span>
           <input
             type="range"
             min={5}
@@ -48,21 +53,24 @@ export function PhaseTimeline({ phases }: { phases: TimelinePhase[] }) {
             value={hours}
             onChange={(e) => setHours(parseInt(e.target.value, 10))}
             className="mt-1 w-56 accent-[var(--accent)]"
-            aria-valuetext={`${hours} hours per week`}
+            aria-valuetext={t.timeline.hoursValue(hours)}
           />
         </label>
         <p className="text-sm">
-          About <strong>{weeksNeeded} weeks</strong>. Starting today you would finish around{" "}
-          <strong>{finish.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}</strong>.
+          <strong>{t.timeline.aboutWeeks(weeksNeeded)}</strong>
+          {t.timeline.finishBefore}
+          <strong>{finish.toLocaleDateString(LOCALE_TAGS[locale], { month: "long", year: "numeric" })}</strong>
+          {t.timeline.finishAfter}
         </p>
       </div>
       <div className="overflow-x-auto rounded-card border border-border bg-surface p-3">
-        <svg viewBox={`0 0 ${W} ${H}`} className="min-w-[640px]" role="img" aria-label="Phase timeline over 26 weeks">
+        <svg viewBox={`0 0 ${W} ${H}`} className="min-w-[640px]" role="img" aria-label={t.timeline.aria}>
           {Array.from({ length: 14 }, (_, i) => i * 2 + 1).map((wk) => (
             <g key={wk}>
               <line x1={x(wk)} x2={x(wk)} y1={28} y2={H - 12} stroke="var(--border)" strokeDasharray="2 4" />
               <text x={x(wk)} y={18} textAnchor="middle" fontSize="10" fill="var(--muted)" fontFamily="var(--font-mono)">
-                w{wk}
+                {t.timeline.week}
+                {wk}
               </text>
             </g>
           ))}
@@ -94,9 +102,9 @@ export function PhaseTimeline({ phases }: { phases: TimelinePhase[] }) {
                   {p.name}
                 </text>
                 {p.areas.map((areaId, k) => (
-                  <Link key={areaId} href={`/${areaId}`}>
+                  <Link key={areaId} href={lp(`/${areaId}`)}>
                     <circle cx={x2 + 12 + k * 14} cy={y + 18} r={5} fill={areaVar(areaId)}>
-                      <title>Open {areaId}</title>
+                      <title>{t.timeline.open(areaId)}</title>
                     </circle>
                   </Link>
                 ))}
@@ -108,7 +116,7 @@ export function PhaseTimeline({ phases }: { phases: TimelinePhase[] }) {
       <ol className="mt-4 grid gap-2 sm:grid-cols-2">
         {phases.map((p) => (
           <li key={p.number} className="rounded-lg border border-border bg-surface px-4 py-3 text-sm">
-            <span className="font-mono text-xs text-muted">Phase {p.number} · Weeks {p.weeks}</span>
+            <span className="font-mono text-xs text-muted">{t.timeline.phaseWeeks(p.number, p.weeks)}</span>
             <div className="font-medium">{p.name}</div>
             <div className="text-muted">{p.description}</div>
           </li>

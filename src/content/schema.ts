@@ -59,6 +59,8 @@ export const Concept = z.object({
   name: z.string().min(1),
   tier: z.enum(["base", "production"]),
   official: z.string().min(1),
+  /** Translation of `official` on localized pages. The English original is always shown as well. */
+  officialTranslation: z.string().min(1).optional(),
   kid: z.string().max(220).optional(),
   realWorld: z
     .object({

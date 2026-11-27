@@ -42,6 +42,8 @@ Counts to keep true: **8 areas · 20 concepts each · 160 concepts · 8 build-th
   - [ ] Lighthouse CI with budgets (Performance 0.9, Accessibility 0.95, Best Practices 0.9, SEO 0.9) on `/`, `/rag`, `/rag/embeddings`.
   - [ ] Bundle-size check (First Load JS ≤ 180 KB per route).
   - [ ] Vercel project connected; `NEXT_PUBLIC_SITE_URL` set to the production URL.
+- [x] **Step 13 — German version under `/de`.** `[locale]` routing with middleware, UI dictionaries, header language switch, `hreflang` + bilingual sitemap, German areas, phases, projects and all 160 concepts. Tests in `tests/i18n.test.ts`.
+  - [ ] Translate demo texts and quiz questions.
 - [ ] **Step 12 — Fresh-eyes review** of 10 random concept pages by an agent that has not seen the code; fix jargon leaks and broken links; record in `docs/review-1.md`.
 
 ## Conventions

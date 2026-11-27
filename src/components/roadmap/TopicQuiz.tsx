@@ -4,6 +4,7 @@ import * as React from "react";
 import { CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { Quiz } from "@/content/schema";
+import { useT } from "@/i18n/client";
 
 interface TopicQuizProps {
   quiz: Quiz;
@@ -11,6 +12,7 @@ interface TopicQuizProps {
 }
 
 export function TopicQuiz({ quiz, color }: TopicQuizProps) {
+  const t = useT();
   const [setIndex, setSetIndex] = React.useState(0);
   const questionSets = [quiz.questions, ...(quiz.retakes ?? [])];
   const questions = questionSets[setIndex] ?? quiz.questions;
@@ -50,18 +52,19 @@ export function TopicQuiz({ quiz, color }: TopicQuizProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 id={`quiz-${quiz.conceptId}`} className="font-mono text-sm tracking-wide uppercase" style={{ color }}>
-            Topic check
+            {t.quiz.title}
           </h3>
-          <p className="mt-1 text-sm text-muted">Answer all 5 questions, then submit.</p>
+          <p className="mt-1 text-sm text-muted">{t.quiz.intro}</p>
+          {t.quiz.languageNote && <p className="mt-1 text-xs text-muted">{t.quiz.languageNote}</p>}
         </div>
         {submitted && (
           <span className="rounded-full border border-border bg-surface px-3 py-1 font-mono text-sm">
-            Score: <strong>{score}/5</strong>
+            {t.quiz.score} <strong>{score}/5</strong>
           </span>
         )}
       </div>
 
-      <div className="mt-4 space-y-5">
+      <div className="mt-4 space-y-5" lang="en">
         {questions.map((question, questionIndex) => {
           const selected = answers[questionIndex];
           return (
@@ -108,15 +111,15 @@ export function TopicQuiz({ quiz, color }: TopicQuizProps) {
                         className="mt-1 accent-[var(--accent)]"
                       />
                       <span className="flex-1">{option}</span>
-                      {isCorrect && <CheckCircle2 className="mt-0.5 h-4 w-4 text-good" aria-label="Correct answer" />}
-                      {isWrongSelection && <XCircle className="mt-0.5 h-4 w-4 text-bad" aria-label="Incorrect answer" />}
+                      {isCorrect && <CheckCircle2 className="mt-0.5 h-4 w-4 text-good" aria-label={t.quiz.correct} />}
+                      {isWrongSelection && <XCircle className="mt-0.5 h-4 w-4 text-bad" aria-label={t.quiz.incorrect} />}
                     </label>
                   );
                 })}
               </div>
               {submitted && (
                 <p className="mt-3 text-sm text-muted">
-                  <strong className="text-good">Correct answer:</strong>{" "}
+                  <strong className="text-good">{t.quiz.correctAnswer}</strong>{" "}
                   {question.options[question.correctAnswer]}. {question.explanation}
                 </p>
               )}
@@ -128,12 +131,12 @@ export function TopicQuiz({ quiz, color }: TopicQuizProps) {
       <div className="mt-4 flex flex-wrap gap-2">
         {!submitted ? (
           <Button onClick={submit} disabled={!answered}>
-            Submit test
+            {t.quiz.submit}
           </Button>
         ) : (
           <Button variant="secondary" onClick={reset}>
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
-            Try again
+            {t.quiz.again}
           </Button>
         )}
       </div>

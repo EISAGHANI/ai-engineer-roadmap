@@ -8,6 +8,7 @@ export interface SearchItem {
   slug: string;
   number: number;
   official: string;
+  officialTranslation?: string;
   kid?: string;
   keywords: string[];
 }
@@ -20,6 +21,7 @@ export function toSearchItems(concepts: Concept[]): SearchItem[] {
     slug: c.slug,
     number: c.number,
     official: c.official,
+    officialTranslation: c.officialTranslation,
     kid: c.kid,
     keywords: c.keywords,
   }));
@@ -34,7 +36,8 @@ export function createIndex(items: SearchItem[]) {
     keys: [
       { name: "name", weight: 0.5 },
       { name: "keywords", weight: 0.25 },
-      { name: "official", weight: 0.15 },
+      { name: "official", weight: 0.1 },
+      { name: "officialTranslation", weight: 0.05 },
       { name: "kid", weight: 0.1 },
     ],
   });

@@ -25,6 +25,10 @@ Each concept is written in three voices for three readers, in this order. Write 
 | Deployment | A food truck that must open every day | Truck = container, route plan = CI/CD, spare truck = rollback |
 | Backend | A post office | Letters = requests, stamps = status codes, PO box = database, queue = message queue |
 
+## Translations (German)
+
+German content lives in `src/content/i18n/de/concepts/<area>.ts`, keyed by concept id. For each concept write `official` (a faithful translation shown under the English original, which stays verbatim), `kid`, `realWorld`, `engineering.text` and `engineering.pitfalls` (same number as in English), and optional German `name` and `keywords`. Keep the same scene as the English area, address the reader as „du“, and keep common technical terms (Prompt, Token, Embedding, Retrieval) in English where German developers use them. The same limits apply: `kid` at most 220 characters and 2 sentences, `realWorld.text` at most 500. `tests/i18n.test.ts` fails when a concept is missing or a limit is broken.
+
 ## Plain-language check
 
 `npm run check:kid` reads every `concepts/*.ts` file and fails on:

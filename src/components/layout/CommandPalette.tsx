@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { createIndex, search, type SearchItem } from "@/lib/search";
 import { areaVar, pad2, cn } from "@/lib/utils";
+import { useLocalePath, useT } from "@/i18n/client";
 
 interface CommandPaletteProps {
   items: SearchItem[];
@@ -16,6 +17,8 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ items, areaNames, open, onClose }: CommandPaletteProps) {
   const router = useRouter();
+  const t = useT();
+  const lp = useLocalePath();
   const index = React.useMemo(() => createIndex(items), [items]);
   const [query, setQuery] = React.useState("");
   const [active, setActive] = React.useState(0);
@@ -32,7 +35,7 @@ export function CommandPalette({ items, areaNames, open, onClose }: CommandPalet
 
   function go(item: SearchItem) {
     onClose();
-    router.push(`/${item.area}/${item.slug}`);
+    router.push(lp(`/${item.area}/${item.slug}`));
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -49,7 +52,7 @@ export function CommandPalette({ items, areaNames, open, onClose }: CommandPalet
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Search the 160 concepts" className="max-w-xl">
+    <Modal open={open} onClose={onClose} title={t.palette.title} className="max-w-xl">
       <div className="relative">
         <Search className="pointer-events-none absolute top-3 left-3 h-5 w-5 text-muted" aria-hidden="true" />
         <input
@@ -58,8 +61,8 @@ export function CommandPalette({ items, areaNames, open, onClose }: CommandPalet
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Try: tokens, cache, injection, docker..."
-          aria-label="Search concepts"
+          placeholder={t.palette.placeholder}
+          aria-label={t.palette.aria}
           aria-controls="palette-results"
           aria-activedescendant={results[active] ? `palette-${results[active].id}` : undefined}
           className="h-11 w-full rounded-full border border-border bg-surface-2 pr-4 pl-10 text-base outline-none focus:border-accent"
@@ -67,7 +70,7 @@ export function CommandPalette({ items, areaNames, open, onClose }: CommandPalet
       </div>
       <ul id="palette-results" role="listbox" className="mt-3 max-h-80 overflow-y-auto">
         {query && results.length === 0 && (
-          <li className="px-3 py-6 text-center text-sm text-muted">No concept matches &ldquo;{query}&rdquo;.</li>
+          <li className="px-3 py-6 text-center text-sm text-muted">{t.palette.noMatch(query)}</li>
         )}
         {results.map((r, i) => (
           <li
@@ -90,14 +93,14 @@ export function CommandPalette({ items, areaNames, open, onClose }: CommandPalet
             </span>
             <span className="flex-1">
               <span className="block font-medium">{r.name}</span>
-              <span className="block truncate text-xs text-muted">{r.official}</span>
+              <span className="block truncate text-xs text-muted">{r.officialTranslation ?? r.official}</span>
             </span>
             <span className="text-xs text-muted">{areaNames[r.area]}</span>
           </li>
         ))}
         {!query && (
           <li className="px-3 py-4 text-sm text-muted">
-            Type a word. Use ↑ ↓ to move and Enter to open a concept.
+            {t.palette.help}
           </li>
         )}
       </ul>
