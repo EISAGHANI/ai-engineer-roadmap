@@ -9,7 +9,7 @@ import { getMessages, isLocale, type Locale } from "@/i18n";
 import { pageMetadata } from "@/i18n/metadata";
 import { buildConceptView } from "@/lib/views";
 import { areaVar, pad2 } from "@/lib/utils";
-import { getQuizFromDb } from "@/lib/db";
+import { getQuiz } from "@/lib/quizzes";
 
 export const dynamicParams = false;
 
@@ -41,7 +41,7 @@ export default async function ConceptPage({ params }: Params) {
   if (!c) notFound();
   const a = content.getArea(c.area);
   const view = await buildConceptView(content, c, true);
-  const quiz = await getQuizFromDb(c.id);
+  const quiz = await getQuiz(c.id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">

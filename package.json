@@ -5,7 +5,6 @@
   "description": "An animated, interactive learning site for the AI Engineer Roadmap (8 areas, 160 concepts) by @ai.learnvora.",
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/migrate.mjs --if-configured",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
