@@ -24,8 +24,16 @@ function loadEnvFile(filePath) {
 loadEnvFile(path.resolve(process.cwd(), ".env.local"));
 loadEnvFile(path.resolve(process.cwd(), ".env"));
 
+// Runs automatically before every `npm run build` (the "prebuild" script) with --if-configured,
+// so each Vercel deployment creates the tables and seeds the topic quizzes before pages are rendered.
+// Without a database (CI, local builds) the build continues and pages render without quizzes.
+const ifConfigured = process.argv.includes("--if-configured");
 const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 if (!connectionString) {
+  if (ifConfigured) {
+    console.warn("[migrate] No DATABASE_URL set: skipping database setup and quiz seeding.");
+    process.exit(0);
+  }
   console.error("Missing DATABASE_URL_UNPOOLED or DATABASE_URL. Run `neon deploy` first.");
   process.exit(1);
 }

@@ -142,6 +142,8 @@ export function buildQuizFromRows(conceptId: string, rows: QuizRow[]): Quiz | nu
 }
 
 export async function getQuizFromDb(conceptId: string): Promise<Quiz | null> {
+  // Builds without a database (CI, local) render the page without a quiz instead of failing.
+  if (!process.env.DATABASE_URL) return null;
   await ensureProgressTables();
   const sql = getSql();
   const quizRows = await sql`
