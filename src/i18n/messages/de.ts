@@ -157,6 +157,12 @@ const de: Messages = {
     correctAnswer: "Richtige Antwort:",
     submit: "Test abschicken",
     again: "Nochmal versuchen",
+    nextSet: "Neue Fragen versuchen",
+    setOf: (n, total) => `Satz ${n} von ${total}`,
+    answered: (n, total) => `${n} von ${total} beantwortet`,
+    ready: "Alles beantwortet. Schick den Test ab, um dein Ergebnis zu sehen.",
+    perfect: "Volle Punktzahl. Das sitzt.",
+    keepGoing: (score, total) => `${score} von ${total} richtig. Lies die Erklärungen und versuch dann neue Fragen.`,
     languageNote: "Die Quizfragen gibt es bisher nur auf Englisch.",
   },
   projects: {

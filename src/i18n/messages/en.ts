@@ -159,6 +159,12 @@ const en = {
     correctAnswer: "Correct answer:",
     submit: "Submit test",
     again: "Try again",
+    nextSet: "Try a new set",
+    setOf: (n: number, total: number) => `Set ${n} of ${total}`,
+    answered: (n: number, total: number) => `${n} of ${total} answered`,
+    ready: "All answered. Submit to see your score.",
+    perfect: "Perfect score. You know this one.",
+    keepGoing: (score: number, total: number) => `${score} of ${total} right. Read the explanations, then try a new set.`,
     languageNote: "",
   },
   projects: {
