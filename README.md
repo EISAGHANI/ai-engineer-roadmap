@@ -6,6 +6,15 @@ Every one of the 160 concepts is explained three ways — **"Explain like I'm 8"
 
 > **Credit.** The roadmap, its structure, the concept names and the one-line definitions belong to LearnVora. This site is a learning companion built on top of it, not a replacement. See [LICENSE](./LICENSE).
 
+## Languages
+
+The site is available in **English** (the original URLs, e.g. `/rag/embeddings`) and **German** (`/de/rag/embeddings`). A switch in the header moves between the two versions of the same page; `hreflang` alternates and a bilingual sitemap tell search engines about both.
+
+- UI strings: `src/i18n/messages/en.ts` and `de.ts` (same keys, checked by TypeScript and `tests/i18n.test.ts`).
+- Content: `src/content/i18n/de/` holds German area summaries, phases, rules, projects and all 160 concepts (`kid`, `realWorld`, `engineering` text and pitfalls, plus a translation of each `official` line). Ids, slugs, code samples, demos and links are never translated; anything missing falls back to English.
+- Routing: every page lives under `src/app/[locale]/`; `src/middleware.ts` rewrites unprefixed URLs to English and serves German under `/de`.
+- Still English on German pages: code samples, the interactive demos and the quiz questions.
+
 ## Stack
 
 Next.js (App Router, TypeScript) · Tailwind CSS v4 · [Motion](https://motion.dev) · Shiki · Zustand (progress in `localStorage`) · Fuse.js (⌘K search) · Zod-validated content · Vitest · GitHub Actions · Vercel.
@@ -31,7 +40,7 @@ Useful scripts:
 
 ```
 src/
-  app/                 routes: /, /start, /[area], /[area]/[slug], /projects, /projects/[id], /portfolio, /progress, /about
+  app/[locale]/        routes (English unprefixed, German under /de): /, /start, /[area], /[area]/[slug], /projects, /projects/[id], /portfolio, /progress, /about
   components/
     ui/                Button, Card, Badge, Tabs, Modal, ProgressRing, Switch, Checkbox, Skeleton
     layout/            Header (search, simple mode, reduce motion, theme), Footer, CommandPalette
@@ -39,8 +48,11 @@ src/
     demos/             one interactive demo per concept, lazily loaded through demos/index.tsx
     illustrations/     static SVGs for concepts without a demo yet
     projects/          ProjectCard, ProjectModal, ProjectDetails (live GitHub stats via ISR)
+  i18n/                locales, UI dictionaries (messages/en.ts, de.ts), LocaleProvider, hreflang helpers
   content/
     schema.ts          Zod schemas (Concept, Area, Project, Phase)
+    localized.ts       getContent(locale): English source merged with a translation
+    i18n/de/           German content: areas, phases, projects, concepts/<area>.ts
     areas.ts phases.ts projects.ts
     concepts/<area>.ts 20 concepts per area — the `official` line is verbatim from the roadmap
   lib/                 progress store, settings, search index, motion helpers, GitHub fetch, view builders
