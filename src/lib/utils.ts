@@ -14,8 +14,8 @@ export function areaVar(areaId: string) {
   return `var(--area-${areaId})`;
 }
 
-export function formatDate(iso: string) {
+export function formatDate(iso: string, locale: "en" | "de" = "en") {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString(locale === "de" ? "de-DE" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
 }

@@ -9,6 +9,7 @@ import { AccountCard } from "@/components/auth/AccountCard";
 import { useProgress, useHydrated, countUsed, streakDays } from "@/lib/progress";
 import { areaVar, pad2, cn } from "@/lib/utils";
 import type { Prerequisite } from "@/content/schema";
+import { useLocalePath, useT } from "@/i18n/client";
 
 interface ProgressViewProps {
   areas: Array<{
@@ -21,6 +22,8 @@ interface ProgressViewProps {
 }
 
 export function ProgressView({ areas, prerequisites }: ProgressViewProps) {
+  const t = useT();
+  const lp = useLocalePath();
   const used = useProgress((s) => s.used);
   const prereqs = useProgress((s) => s.prereqs);
   const reset = useProgress((s) => s.reset);
@@ -49,43 +52,43 @@ export function ProgressView({ areas, prerequisites }: ProgressViewProps) {
     if (!f) return;
     const text = await f.text();
     const r = importJson(text);
-    setMessage(r.ok ? `Imported ${r.count} concepts.` : "That file could not be read.");
+    setMessage(r.ok ? t.progress.imported(r.count) : t.progress.importFailed);
     e.target.value = "";
   }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <h1 className="text-4xl font-semibold sm:text-5xl">My progress</h1>
+      <h1 className="text-4xl font-semibold sm:text-5xl">{t.progress.title}</h1>
       <p className="prose-max mt-3 text-muted">
-        Synced with your Neon Postgres database and cached locally in this browser. You can also export a JSON backup anytime.
+        {t.progress.lead}
       </p>
 
       <AccountCard />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <Stat label="Concepts used" value={`${total} / 160`} />
-        <Stat label="Day streak" value={`${streak}`} icon={<Flame className="h-5 w-5 text-warn" aria-hidden="true" />} />
-        <Stat label="Prerequisites" value={`${prereqDone} / ${prerequisites.length}`} />
+        <Stat label={t.progress.conceptsUsed} value={`${total} / 160`} />
+        <Stat label={t.progress.streak} value={`${streak}`} icon={<Flame className="h-5 w-5 text-warn" aria-hidden="true" />} />
+        <Stat label={t.progress.prerequisites} value={`${prereqDone} / ${prerequisites.length}`} />
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
         <Button variant="secondary" onClick={download}>
-          <Download className="h-4 w-4" aria-hidden="true" /> Export JSON
+          <Download className="h-4 w-4" aria-hidden="true" /> {t.progress.export}
         </Button>
         <Button variant="secondary" onClick={() => fileRef.current?.click()}>
-          <Upload className="h-4 w-4" aria-hidden="true" /> Import JSON
+          <Upload className="h-4 w-4" aria-hidden="true" /> {t.progress.import}
         </Button>
-        <input ref={fileRef} type="file" accept="application/json" onChange={onFile} className="hidden" aria-label="Import progress file" />
+        <input ref={fileRef} type="file" accept="application/json" onChange={onFile} className="hidden" aria-label={t.progress.importAria} />
         <Button
           variant="ghost"
           onClick={() => {
-            if (window.confirm("Reset all progress in this browser?")) {
+            if (window.confirm(t.progress.resetConfirm)) {
               reset();
-              setMessage("Progress reset.");
+              setMessage(t.progress.resetDone);
             }
           }}
         >
-          <Trash2 className="h-4 w-4" aria-hidden="true" /> Reset
+          <Trash2 className="h-4 w-4" aria-hidden="true" /> {t.progress.reset}
         </Button>
         {message && (
           <span className="self-center text-sm text-muted" role="status">
@@ -101,16 +104,16 @@ export function ProgressView({ areas, prerequisites }: ProgressViewProps) {
           return (
             <section key={a.id} className="rounded-card border border-border bg-surface p-5" aria-labelledby={`pa-${a.id}`}>
               <div className="flex items-center gap-4">
-                <ProgressRing value={done / 20} size={56} stroke={6} color={color} label={`${a.name} progress`}>
+                <ProgressRing value={done / 20} size={56} stroke={6} color={color} label={t.progress.areaProgress(a.name)}>
                   {done}
                 </ProgressRing>
                 <div className="flex-1">
                   <h2 id={`pa-${a.id}`} className="text-lg font-semibold">
-                    <Link href={`/${a.id}`} className="hover:underline">
+                    <Link href={lp(`/${a.id}`)} className="hover:underline">
                       {pad2(a.number)} {a.name}
                     </Link>
                   </h2>
-                  <p className="text-sm text-muted">{done} of 20 used in code</p>
+                  <p className="text-sm text-muted">{t.progress.usedOf(done)}</p>
                 </div>
               </div>
               <ul className="mt-4 grid grid-cols-5 gap-1.5 sm:grid-cols-10">
@@ -119,8 +122,8 @@ export function ProgressView({ areas, prerequisites }: ProgressViewProps) {
                   return (
                     <li key={c.id}>
                       <Link
-                        href={`/${a.id}/${c.slug}`}
-                        title={`${pad2(c.number)} ${c.name}${isUsed ? " (used)" : ""}`}
+                        href={lp(`/${a.id}/${c.slug}`)}
+                        title={`${pad2(c.number)} ${c.name}${isUsed ? t.progress.usedSuffix : ""}`}
                         className={cn(
                           "flex h-8 items-center justify-center rounded-md font-mono text-xs transition-colors",
                           isUsed ? "text-accent-ink" : "bg-surface-2 text-muted hover:text-text",

@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useProgress, useHydrated } from "@/lib/progress";
 import { areaVar, pad2 } from "@/lib/utils";
+import { useLocalePath, useT } from "@/i18n/client";
 
 export interface DotGridArea {
   id: string;
@@ -26,6 +27,8 @@ interface DotGridProps {
  * Filled dots are concepts the visitor has marked as used.
  */
 export function DotGrid({ areas, shimmer = false, compact = false, highlightIds }: DotGridProps) {
+  const t = useT();
+  const lp = useLocalePath();
   const used = useProgress((s) => s.used);
   const highlight = React.useMemo(() => new Set(highlightIds ?? []), [highlightIds]);
   const hydrated = useHydrated();
@@ -42,7 +45,7 @@ export function DotGrid({ areas, shimmer = false, compact = false, highlightIds 
   const dot = compact ? "h-2 w-2 rounded-[2px]" : "h-3 w-3 rounded-[3px] sm:h-3.5 sm:w-3.5";
 
   return (
-    <div ref={ref} className="inline-grid gap-y-2" role="img" aria-label="Progress across all 160 concepts">
+    <div ref={ref} className="inline-grid gap-y-2" role="img" aria-label={t.dotGrid.aria}>
       {areas.map((a, rowIndex) => (
         <div key={a.id} className="flex items-center gap-3">
           {!compact && (
@@ -50,7 +53,7 @@ export function DotGrid({ areas, shimmer = false, compact = false, highlightIds 
               {pad2(a.number)}
             </span>
           )}
-          <Link href={`/${a.id}`} className="flex gap-1 sm:gap-1.5" aria-label={`${a.name}: open area`}>
+          <Link href={lp(`/${a.id}`)} className="flex gap-1 sm:gap-1.5" aria-label={t.dotGrid.openArea(a.name)}>
             {a.conceptIds.map((cid, i) => {
               const filled = highlightIds ? highlight.has(cid) : hydrated && Boolean(used[cid]);
               const idle = shimmer && visible && !filled && (i + rowIndex) % 7 === 0;

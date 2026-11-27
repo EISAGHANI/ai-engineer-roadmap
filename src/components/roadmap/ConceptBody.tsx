@@ -14,6 +14,7 @@ import { areaVar, pad2 } from "@/lib/utils";
 import { TopicQuiz } from "./TopicQuiz";
 import type { ConceptView } from "./types";
 import type { Quiz } from "@/content/schema";
+import { useLocalePath, useT } from "@/i18n/client";
 
 type Layer = "kid" | "real" | "eng";
 
@@ -31,6 +32,8 @@ interface ConceptBodyProps {
  */
 export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyProps) {
   const { concept: c, codeHtml, related, projects, prev, next } = view;
+  const t = useT();
+  const lp = useLocalePath();
   const simple = useSettings((s) => s.simpleMode);
   const used = useProgress((s) => s.used);
   const setUsed = useProgress((s) => s.setUsed);
@@ -48,9 +51,9 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
   const Illustration = !demoName && c.illustration ? illustrations[c.illustration] : undefined;
 
   const tabs = [
-    { id: "kid", label: "Explain like I'm 8", icon: <Baby className="h-4 w-4" aria-hidden="true" /> },
-    { id: "real", label: "In the real world", icon: <Globe className="h-4 w-4" aria-hidden="true" /> },
-    ...(simple ? [] : [{ id: "eng", label: "For engineers", icon: <Code2 className="h-4 w-4" aria-hidden="true" /> }]),
+    { id: "kid", label: t.concept.tabKid, icon: <Baby className="h-4 w-4" aria-hidden="true" /> },
+    { id: "real", label: t.concept.tabReal, icon: <Globe className="h-4 w-4" aria-hidden="true" /> },
+    ...(simple ? [] : [{ id: "eng", label: t.concept.tabEng, icon: <Code2 className="h-4 w-4" aria-hidden="true" /> }]),
   ];
 
   return (
@@ -63,14 +66,22 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-2xl font-semibold">{c.name}</h2>
             <Badge color={color} mono>
-              {c.tier === "base" ? "The base" : "Production level"}
+              {c.tier === "base" ? t.concept.base : t.concept.production}
             </Badge>
           </div>
-          <p className="mt-1 text-muted">{c.official}</p>
+          <p className="mt-1 text-muted" lang={c.officialTranslation ? "en" : undefined}>
+            {c.official}
+          </p>
+          {c.officialTranslation && (
+            <p className="mt-1 text-sm text-muted/80">
+              {t.concept.officialNote && <span className="font-medium">{t.concept.officialNote} </span>}
+              {c.officialTranslation}
+            </p>
+          )}
         </div>
         <label className="flex shrink-0 flex-col items-center gap-1 text-[11px] text-muted">
-          <Checkbox checked={isUsed} onChange={(v) => setUsed(c.id, v)} label={`I used ${c.name} in code`} color={color} />
-          used it
+          <Checkbox checked={isUsed} onChange={(v) => setUsed(c.id, v)} label={t.concept.usedLabel(c.name)} color={color} />
+          {t.concept.usedIt}
         </label>
       </header>
 
@@ -80,7 +91,7 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
           {c.kid ? (
             <p className="prose-max text-lg leading-relaxed">{c.kid}</p>
           ) : (
-            <ComingSoon what="simple explanation" />
+            <ComingSoon text={t.concept.comingSoon(t.concept.soonKid)} />
           )}
         </TabPanel>
         <TabPanel id="real" idPrefix={idPrefix} active={layer === "real"} className="mt-4">
@@ -90,7 +101,7 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
               <p className="mt-1 leading-relaxed">{c.realWorld.text}</p>
             </div>
           ) : (
-            <ComingSoon what="real-world example" />
+            <ComingSoon text={t.concept.comingSoon(t.concept.soonReal)} />
           )}
         </TabPanel>
         {!simple && (
@@ -105,10 +116,11 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
                     <code>{c.engineering.code.source}</code>
                   </pre>
                 ) : null}
+                {c.engineering.code && t.concept.codeNote && <p className="text-xs text-muted">{t.concept.codeNote}</p>}
                 {c.engineering.pitfalls && c.engineering.pitfalls.length > 0 && (
                   <div className="rounded-lg border border-border bg-surface-2 p-3 text-sm">
                     <div className="mb-1 flex items-center gap-1 font-medium">
-                      <AlertTriangle className="h-4 w-4 text-warn" aria-hidden="true" /> Pitfalls
+                      <AlertTriangle className="h-4 w-4 text-warn" aria-hidden="true" /> {t.concept.pitfalls}
                     </div>
                     <ul className="list-disc space-y-1 pl-5 text-muted">
                       {c.engineering.pitfalls.map((p) => (
@@ -125,19 +137,19 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
                     className="inline-flex items-center gap-1 text-sm underline-offset-4 hover:underline"
                     style={{ color }}
                   >
-                    Official docs <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                    {t.concept.docs} <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                   </a>
                 )}
               </div>
             ) : (
-              <ComingSoon what="engineering deep-dive" />
+              <ComingSoon text={t.concept.comingSoon(t.concept.soonEng)} />
             )}
           </TabPanel>
         )}
       </div>
 
-      <section className="mt-6" aria-label="Try it">
-        <h3 className="mb-2 text-sm font-medium text-muted">Try it</h3>
+      <section className="mt-6" aria-label={t.concept.tryIt}>
+        <h3 className="mb-2 text-sm font-medium text-muted">{t.concept.tryIt}</h3>
         {demoName ? (
           <DemoSlot area={c.area} name={demoName} />
         ) : Illustration ? (
@@ -146,7 +158,7 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
           </div>
         ) : (
           <div className="flex h-32 items-center justify-center rounded-card border border-dashed border-border text-sm text-muted">
-            Interactive demo coming soon.
+            {t.concept.demoSoon}
           </div>
         )}
       </section>
@@ -154,8 +166,8 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
       {quiz && <TopicQuiz key={c.id} quiz={quiz} color={color} />}
 
       {projects.length > 0 && (
-        <section className="mt-6" aria-label="Where you will build it">
-          <h3 className="mb-2 text-sm font-medium text-muted">Where you&rsquo;ll build it</h3>
+        <section className="mt-6" aria-label={t.concept.whereBuild}>
+          <h3 className="mb-2 text-sm font-medium text-muted">{t.concept.whereBuild}</h3>
           <div className="flex flex-wrap gap-2">
             {projects.map((p) =>
               onOpenProject ? (
@@ -170,7 +182,7 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
               ) : (
                 <Link
                   key={p.id}
-                  href={`/projects/${p.id}`}
+                  href={lp(`/projects/${p.id}`)}
                   className="rounded-full border border-border bg-surface-2 px-3 py-1 text-sm hover:border-accent"
                 >
                   {p.title}
@@ -182,13 +194,13 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
       )}
 
       {related.length > 0 && (
-        <section className="mt-6" aria-label="Related concepts">
-          <h3 className="mb-2 text-sm font-medium text-muted">Related concepts</h3>
+        <section className="mt-6" aria-label={t.concept.related}>
+          <h3 className="mb-2 text-sm font-medium text-muted">{t.concept.related}</h3>
           <div className="flex flex-wrap gap-2">
             {related.map((r) => (
               <Link
                 key={r.id}
-                href={`/${r.area}/${r.slug}`}
+                href={lp(`/${r.area}/${r.slug}`)}
                 className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm hover:bg-surface-2"
                 style={{ borderColor: areaVar(r.area) }}
               >
@@ -203,7 +215,7 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
       )}
 
       {showNav && (prev || next) && (
-        <nav className="mt-8 flex justify-between gap-3 border-t border-border pt-4 text-sm" aria-label="Previous and next concept">
+        <nav className="mt-8 flex justify-between gap-3 border-t border-border pt-4 text-sm" aria-label={t.concept.prevNext}>
           {prev ? (
             <Link href={prev.href} className="inline-flex items-center gap-1 text-muted hover:text-text">
               <ChevronLeft className="h-4 w-4" aria-hidden="true" /> {prev.name}
@@ -224,10 +236,6 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
   );
 }
 
-function ComingSoon({ what }: { what: string }) {
-  return (
-    <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">
-      The {what} for this concept is being written. The official one-liner above is the summary for now.
-    </p>
-  );
+function ComingSoon({ text }: { text: string }) {
+  return <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted">{text}</p>;
 }

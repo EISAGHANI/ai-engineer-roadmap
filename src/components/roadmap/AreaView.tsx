@@ -16,6 +16,7 @@ import { areaVar, pad2 } from "@/lib/utils";
 import type { ConceptView } from "./types";
 import type { ProjectView } from "@/components/projects/types";
 import type { Resource } from "@/content/schema";
+import { useLocalePath, useT } from "@/i18n/client";
 
 interface AreaViewProps {
   area: { id: string; number: number; code: string; name: string; summary: string; phase: number[]; weeks: string; learnFrom: Resource[] };
@@ -25,6 +26,8 @@ interface AreaViewProps {
 
 export function AreaView({ area, concepts, projects }: AreaViewProps) {
   const router = useRouter();
+  const t = useT();
+  const lp = useLocalePath();
   const [projectId, setProjectId] = useUrlParam("project");
   const used = useProgress((s) => s.used);
   const hydrated = useHydrated();
@@ -44,9 +47,9 @@ export function AreaView({ area, concepts, projects }: AreaViewProps) {
     (id: string) => {
       // Projects from other areas have their own page; this area's projects open in the modal.
       if (projects.some((p) => p.project.id === id)) setProjectId(id);
-      else router.push(`/projects/${id}`);
+      else router.push(lp(`/projects/${id}`));
     },
-    [projects, router, setProjectId],
+    [projects, router, setProjectId, lp],
   );
   const closeProject = React.useCallback(() => setProjectId(null), [setProjectId]);
 
@@ -73,24 +76,27 @@ export function AreaView({ area, concepts, projects }: AreaViewProps) {
       <header>
         <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted">
           <span style={{ color }}>
-            AREA {pad2(area.number)} / 08 · {area.code}
+            {t.area.eyebrow(pad2(area.number), area.code)}
           </span>
           <Badge mono color={color}>
-            Phase {area.phase.join(" + ")} · Weeks {area.weeks}
+            {t.areaCard.phaseWeeks(area.phase.join(" + "), area.weeks)}
           </Badge>
         </div>
         <h1 className="mt-2 text-4xl font-semibold sm:text-5xl">{area.name}</h1>
         <p className="mt-2 text-lg text-muted">{area.summary}</p>
         <div className="mt-4 flex items-center gap-3">
-          <ProgressBar value={done / 20} color={color} label={`${area.name} progress`} />
-          <span className="shrink-0 font-mono text-sm text-muted">{done}/20 used</span>
+          <ProgressBar value={done / 20} color={color} label={t.areaCard.progress(area.name)} />
+          <span className="shrink-0 font-mono text-sm text-muted">{t.area.used(done)}</span>
         </div>
         <p className="mt-2 text-xs text-muted">
-          Tick a box only when you have used the concept in code. Press <kbd className="rounded border border-border px-1 font-mono">j</kbd>/<kbd className="rounded border border-border px-1 font-mono">k</kbd> to move between concepts.
+          {t.area.hintBefore}
+          <kbd className="rounded border border-border px-1 font-mono">j</kbd>/
+          <kbd className="rounded border border-border px-1 font-mono">k</kbd>
+          {t.area.hintAfter}
         </p>
       </header>
 
-      <Tier title="01-10 · The base" subtitle="Learn these first. Come back for 11-20 after you have shipped something." color={color}>
+      <Tier title={t.area.baseTitle} subtitle={t.area.baseSubtitle} color={color}>
         <motion.div variants={stagger} initial="hidden" animate="show" className="space-y-2">
           {base.map((v, i) => (
             <ConceptCard
@@ -105,7 +111,7 @@ export function AreaView({ area, concepts, projects }: AreaViewProps) {
         </motion.div>
       </Tier>
 
-      <Tier title="11-20 · Production level" subtitle="What you need when real users and real traffic arrive." color={color}>
+      <Tier title={t.area.prodTitle} subtitle={t.area.prodSubtitle} color={color}>
         <div className="space-y-2">
           {production.map((v) => (
             <ConceptCard
@@ -122,7 +128,7 @@ export function AreaView({ area, concepts, projects }: AreaViewProps) {
       {projects.length > 0 && (
         <section className="mt-12" aria-labelledby="build-this">
           <h2 id="build-this" className="mb-3 inline-flex items-center gap-2 font-mono text-sm tracking-wide uppercase" style={{ color }}>
-            <Hammer className="h-4 w-4" aria-hidden="true" /> Build this
+            <Hammer className="h-4 w-4" aria-hidden="true" /> {t.area.buildThis}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {projects.map((p, i) => (
@@ -135,7 +141,7 @@ export function AreaView({ area, concepts, projects }: AreaViewProps) {
       {area.learnFrom.length > 0 && (
         <section className="mt-10" aria-labelledby="learn-from">
           <h2 id="learn-from" className="mb-2 font-mono text-sm tracking-wide uppercase" style={{ color }}>
-            Learn from
+            {t.area.learnFrom}
           </h2>
           <ul className="flex flex-wrap gap-2">
             {area.learnFrom.map((r) => (
@@ -164,7 +170,7 @@ export function AreaView({ area, concepts, projects }: AreaViewProps) {
             setExpanded(id);
           } else {
             const [areaId] = id.split(/-(?=\d{2}$)/);
-            router.push(`/${areaId}#${id}`);
+            router.push(lp(`/${areaId}#${id}`));
           }
         }}
       />
