@@ -32,6 +32,7 @@ interface ConceptBodyProps {
  */
 export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyProps) {
   const { concept: c, codeHtml, related, projects, prev, next } = view;
+  const activeQuiz = quiz ?? view.quiz ?? null;
   const t = useT();
   const lp = useLocalePath();
   const simple = useSettings((s) => s.simpleMode);
@@ -163,7 +164,7 @@ export function ConceptBody({ view, quiz, onOpenProject, showNav }: ConceptBodyP
         )}
       </section>
 
-      {quiz && <TopicQuiz key={c.id} quiz={quiz} color={color} />}
+      {activeQuiz && <TopicQuiz key={c.id} quiz={activeQuiz} color={color} />}
 
       {projects.length > 0 && (
         <section className="mt-6" aria-label={t.concept.whereBuild}>

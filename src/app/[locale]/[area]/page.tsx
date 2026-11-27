@@ -7,6 +7,7 @@ import { getMessages, isLocale, type Locale } from "@/i18n";
 import { pageMetadata } from "@/i18n/metadata";
 import { getRepoStatsMap } from "@/lib/github";
 import { buildConceptView, buildProjectView } from "@/lib/views";
+import { getQuiz } from "@/lib/quizzes";
 
 export const dynamicParams = false;
 
@@ -31,7 +32,9 @@ export default async function AreaPage({ params }: Params) {
   if (!a) notFound();
 
   const conceptList = content.getConceptsForArea(a.id);
-  const views = await Promise.all(conceptList.map((c) => buildConceptView(content, c)));
+  const views = await Promise.all(
+    conceptList.map(async (c) => ({ ...(await buildConceptView(content, c)), quiz: await getQuiz(c.id) })),
+  );
 
   const areaProjects = content.getProjectsForArea(a.id);
   const ordered = [...areaProjects].sort((x, y) => (x.id === a.buildThis ? -1 : y.id === a.buildThis ? 1 : 0));
