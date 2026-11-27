@@ -33,6 +33,7 @@ Useful scripts:
 | --- | --- |
 | `npm run build` | Production build: 8 area pages, 160 concept pages, project pages, sitemap |
 | `npm run test` | Content schema, 160-count, id resolution, demo registry, progress helpers |
+| `npm run db:migrate` | Creates the tables and seeds the 2,400 topic-quiz questions in Neon (also runs automatically before every build when `DATABASE_URL` is set) |
 | `npm run check:kid` | Plain-language check for every "Explain like I'm 8" line |
 | `npm run lint` / `npm run typecheck` | ESLint and `tsc --noEmit` |
 
